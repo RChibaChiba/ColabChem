@@ -5,15 +5,14 @@
 | ColabUMA | 構造最適化 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA.ipynb) |
 | ColabUMA Scan | 緩和スキャン（結合長・角度・二面角） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Scan.ipynb) |
 
-Google Colabで開いて「すべて実行」するだけで、Metaの機械学習ポテンシャル **UMA** を使って分子の構造最適化や緩和スキャンができるノートブックです。xyz、Gaussianの gjf、SMILES のどれかで構造を入れて、電荷とスピン多重度を指定するだけで使えます。
+Google Colabで開いて「すべて実行」するだけで、Metaの機械学習ポテンシャル **UMA** を使って分子の構造最適化や緩和スキャンができるノートブックです。xyz か Gaussian の gjf で構造を入れて、電荷とスピン多重度を指定するだけで使えます。
 
 <!-- TODO: 画面のスクリーンショットを置く（例：docs/screenshot.png） -->
 
 ## できること
 
-- SMILES（RDKitで3D化）、xyz ファイル、Gaussian の入力ファイル（.gjf / .com）からの構造最適化（LBFGS / BFGS / FIRE）
+- xyz ファイル、Gaussian の入力ファイル（.gjf / .com）からの構造最適化（LBFGS / BFGS / FIRE）
 - 最適化の経路を Gaussian の log 形式でも出力（GaussView で各ステップの構造とエネルギー変化を確認できる）
-- 複数の初期配座を生成して全部最適化し、最安定配座を選ぶ
 - 振動計算で虚振動の有無を確認
 - 3D表示、エネルギー（eV・Hartree）、収束グラフの表示と、結果一式のZIPダウンロード
 
@@ -37,9 +36,9 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 1. 上の「Open in Colab」バッジからノートを開く
 2. **ランタイム → ランタイムのタイプを変更** で **T4 GPU** を選ぶ
 3. 初回のみ、シークレットに `HF_TOKEN` を登録してノートからのアクセスを許可する
-4. 「1. 入力フォーム」で出力名、入力方法、電荷、スピン多重度、収束判定を指定する
+4. 「1. 入力フォーム」で出力名、電荷、スピン多重度、収束判定を指定する
 5. **ランタイム → すべて実行** を押す
-6. 「2. ファイル選択と事前確認」にファイル選択ボタンが出るので、xyz または gjf を選ぶ（SMILESのときは不要）。あとはインストールも計算も放置できます
+6. 「2. ファイル選択と事前確認」にファイル選択ボタンが出るので、xyz または gjf を選ぶ。あとはインストールも計算も放置できます
 7. 3D表示、エネルギー、収束グラフを確認する
 8. 結果のZIPをダウンロードする
 
@@ -52,8 +51,6 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 | 項目 | 既定値 | 説明 |
 |---|---|---|
 | 出力名 | `result` | 出力ファイル名の接頭辞 |
-| 入力方法 | ファイルアップロード（xyz / gjf） | ファイルアップロード（xyz / gjf）/ SMILES |
-| SMILES | `CCO` | 入力方法がSMILESのときに使用 |
 | 電荷 | 0 | 分子全体の電荷 |
 | スピン多重度 | 1 | 2S+1。電子数と偶奇が合わなければエラー |
 | モデル | uma-s-1p1 | uma-s-1p1 / uma-s-1p2 / uma-m-1p1 |
@@ -62,7 +59,6 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 | 収束判定 | loose（0.05） | fmax（eV/Å）。loose 0.05 / normal 0.02（Gaussian の既定と同程度）/ tight 0.001（Gaussian の opt=tight と同程度）/ 数値指定 |
 | 数値指定の fmax | 0.05 | 収束判定で「数値指定」を選んだときに使用 |
 | 最大ステップ数 | 500 | |
-| 配座数 | 1 | SMILESのときRDKitで生成する初期配座の数。2以上なら全部最適化して最安定を採用 |
 | 振動計算 | オフ | オンなら最適化後に虚振動の有無を確認 |
 
 xyzファイルは1ファイル1構造です。複数の構造が入っている場合は先頭だけを使います。サンプルは [examples/example.xyz](examples/example.xyz) と [examples/example.gjf](examples/example.gjf) にあります。
@@ -77,7 +73,6 @@ Gaussianの入力ファイル（拡張子 .gjf / .com / .gjc）からは**構造
 | `<出力名>_opt.log` | 最適化の全ステップを Gaussian の opt 出力と同じ書式で書いたもの。GaussView で開くと経路のアニメーションとエネルギー変化のグラフが見られる |
 | `<出力名>_traj.xyz` | 最適化の全ステップ（複数構造xyz） |
 | `<出力名>_log.txt` | 入力条件、ソフトのバージョン、各ステップのエネルギーと fmax |
-| `<出力名>_conformers.csv` | 配座ごとのエネルギー（配座数2以上のとき） |
 | `<出力名>_freq.txt` | 振動数の一覧（振動計算オンのとき） |
 
 ## ColabUMA Scan
@@ -110,7 +105,7 @@ Gaussianの入力ファイル（拡張子 .gjf / .com / .gjc）からは**構造
 
 ## 注意事項
 
-- SMILESから作った初期構造は電荷やスピンを考慮していないため、鞍点に収束することがあります。重要な構造は振動計算で確認してください。
+- 最適化は鞍点に収束することがあります。重要な構造は振動計算で確認してください。
 - UMAは機械学習ポテンシャルであり、DFTの代わりにはなりません。最終的なエネルギー比較はDFTで確認してください。
 - 小さな分子（数十原子以下）では、DFTを直接使う方が確実な場面が多くあります。
 - 扱える元素は H〜Bi（原子番号1〜83）です。
