@@ -14,6 +14,7 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 - xyz ファイル、Gaussian の入力ファイル（.gjf / .com）からの構造最適化（LBFGS / BFGS / FIRE）
 - 最適化の経路を Gaussian の log 形式でも出力（GaussView で各ステップの構造とエネルギー変化を確認できる）
 - 振動計算で虚振動の有無を確認
+- 最適化後の構造で、GPU（[GPU4PySCF](https://github.com/pyscf/gpu4pyscf)）による DFT の一点計算（SPE）
 - 3D表示、エネルギー（eV・Hartree）、収束グラフの表示と、結果一式のZIPダウンロード
 
 - 結合長・角度・二面角の緩和スキャンと、スキャン前後の最適化（[ColabUMA Scan](#colabuma-scan)）
@@ -60,6 +61,9 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 | 数値指定の fmax | 0.05 | 収束判定で「数値指定」を選んだときに使用 |
 | 最大ステップ数 | 500 | |
 | 振動計算 | オフ | オンなら最適化後に虚振動の有無を確認 |
+| 一点計算 | オフ | オンなら最適化後の構造で DFT の一点計算をする（[一点計算（SPE）](#一点計算spe)） |
+| 汎関数 | B3LYP-D3(BJ) | B3LYP-D3(BJ) / PBE0-D3(BJ) / ωB97M-V / ωB97X-V / M06-2X / r2SCAN-D4 / HF |
+| 基底関数 | def2-SVP | def2-SVP / def2-TZVP / def2-TZVPD / def2-QZVP / 6-31G(d) / 6-31+G(d,p) / 6-311+G(d,p) / cc-pVDZ / cc-pVTZ / aug-cc-pVTZ |
 
 xyzファイルは1ファイル1構造です。複数の構造が入っている場合は先頭だけを使います。サンプルは [examples/example.xyz](examples/example.xyz) と [examples/example.gjf](examples/example.gjf) にあります。
 
@@ -74,6 +78,22 @@ Gaussianの入力ファイル（拡張子 .gjf / .com / .gjc）からは**構造
 | `<出力名>_traj.xyz` | 最適化の全ステップ（複数構造xyz） |
 | `<出力名>_log.txt` | 入力条件、ソフトのバージョン、各ステップのエネルギーと fmax |
 | `<出力名>_freq.txt` | 振動数の一覧（振動計算オンのとき） |
+| `<出力名>_spe.txt` | 一点計算のエネルギー、HOMO・LUMO、双極子モーメント、Mulliken 電荷（一点計算オンのとき） |
+| `<出力名>_spe_pyscf.log` | 一点計算の PySCF の出力（SCF の各サイクルなど） |
+
+### 一点計算（SPE）
+
+UMA で最適化した構造を使い、DFT（または HF）でエネルギーを計算し直します。GPU があれば [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)、なければ CPU の PySCF を使います（CPU はかなり遅い）。一点計算をオンにしたときだけ、gpu4pyscf・pyscf・pyscf-dispersion をインストールします。
+
+- 閉殻（多重度 1）は RKS / RHF、開殻は UKS / UHF で計算します。開殻では `<S²>` も表示します
+- 密度フィッティング（RI-J、HF は RI-JK）を使います。エネルギーの誤差は µHartree 程度です
+- 分散補正（D3(BJ)、D4）は pyscf-dispersion で計算します。ωB97M-V と ωB97X-V は VV10 を含みます
+- SCF の収束判定は 1e-9 Hartree、最大 100 サイクルです。グリッドは PySCF の level 3（M06-2X は level 5）です
+- def2 系の基底関数では、Rb 以降の元素に def2 の ECP を使います。Pople 系や cc-pV*Z は重い元素に対応していないことがあります
+- UMA（omol）の学習データ（OMol25）と同じ計算条件は ωB97M-V / def2-TZVPD です
+- 溶媒効果には対応していません（気相）
+
+T4 GPU は倍精度の計算が遅いため、大きな分子や大きな基底関数では時間がかかります。
 
 ## ColabUMA Scan
 
