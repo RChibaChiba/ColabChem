@@ -16,6 +16,8 @@ FAIRCHEM_VERSION = "2.25.0"
 
 # 追加の機能ごとに必要なもの。apt はシステムのライブラリ、pip は (配布名, 指定) の組
 EXTRAS = {
+    # fairchem が一緒に入れるもの。UMA を使わない ColabSPE では別に入れる
+    "structure": {"apt": [], "pip": [("ase", "ase"), ("py3Dmol", "py3Dmol")]},
     # DMF（pydmf）は IPOPT を使う。cyipopt は pip のバイナリがないので、apt の Ipopt からビルドする
     "ts": {
         "apt": ["coinor-libipopt-dev", "liblapack-dev", "libblas-dev", "pkg-config"],
@@ -84,7 +86,7 @@ def _install_extra(name):
     missing = [pin for pkg, pin in spec["pip"] if installed(pkg) is None or ("==" in pin and installed(pkg) != pin.split("==")[1])]
     if not missing:
         return False
-    label = {"ts": "遷移状態探索（DMF・Sella）", "dft": "DFT（gpu4pyscf）"}[name]
+    label = {"structure": "構造の読み込み（ASE）", "ts": "遷移状態探索（DMF・Sella）", "dft": "DFT（gpu4pyscf）"}[name]
     print(f"{label}のライブラリをインストールしています。1〜2分かかります…")
     if spec["apt"]:
         if shutil.which("apt-get") is None:
@@ -132,10 +134,22 @@ def setup(extras=()):
     return DEVICE
 
 
-def device_name():
-    import torch
+def setup_dft():
+    """UMA を使わない DFT だけのインストール。fairchem も Hugging Face の認証もいらない。DEVICE を返す。"""
+    global DEVICE
+    for name in ("structure", "dft"):
+        if _install_extra(name):
+            ok("ライブラリのインストールが完了しました。")
+    DEVICE = "cuda" if has_gpu() else "cpu"
+    print("計算デバイス:", device_name())
+    return DEVICE
 
-    return torch.cuda.get_device_name(0) if DEVICE == "cuda" else "CPU"
+
+def device_name():
+    if DEVICE != "cuda":
+        return "CPU"
+    r = subprocess.run(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"], capture_output=True, text=True)
+    return r.stdout.strip().splitlines()[0] if r.returncode == 0 and r.stdout.strip() else "GPU"
 
 
 def _check_hf_access():
@@ -207,9 +221,8 @@ def software_lines():
     import ase
     import numpy as np
 
-    lines = [f"Python {platform.python_version()}", f"fairchem-core {installed('fairchem-core') or '-'}",
-             f"ase {ase.__version__}"]
-    for pkg in ("pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "pyscf"):
+    lines = [f"Python {platform.python_version()}", f"ase {ase.__version__}"]
+    for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "pyscf"):
         if installed(pkg):
             lines.append(f"{pkg} {installed(pkg)}")
     try:

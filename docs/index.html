@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ColabUMA</title>
+<meta name="description" content="Google Colab で UMA による構造最適化・スキャン・遷移状態探索と DFT の一点計算を、フォーム入力だけで行うノートブック集。">
+<style>
+:root {
+  --bg: #fafaf7;
+  --surface: #ffffff;
+  --ink: #1c2321;
+  --muted: #5b6662;
+  --line: #dfe3dd;
+  --accent: #0b6e5f;
+  --accent-ink: #ffffff;
+  --tag: #e6f0ec;
+  --tag-ink: #0a5a4e;
+  --note: #f3efe3;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141917;
+    --surface: #1c2321;
+    --ink: #e8ece9;
+    --muted: #a0aba6;
+    --line: #333d39;
+    --accent: #5ec9b4;
+    --accent-ink: #0e1a17;
+    --tag: #243530;
+    --tag-ink: #9adfd0;
+    --note: #2a2a22;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+a { color: var(--accent); }
+code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .88em; overflow-wrap: anywhere; }
+header { padding: 56px 0 36px; }
+header h1 { margin: 0 0 8px; font-size: clamp(2rem, 6vw, 2.75rem); line-height: 1.2; letter-spacing: -.01em; }
+header p { margin: 0; max-width: 42em; color: var(--muted); font-size: 1.06rem; }
+h2 { margin: 48px 0 16px; font-size: 1.3rem; line-height: 1.4; }
+.cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.card h3 { margin: 0 0 4px; font-size: 1.12rem; line-height: 1.4; }
+.card > p { margin: 0 0 14px; }
+.card dl { margin: 0 0 18px; font-size: .88rem; line-height: 1.6; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0 0 8px; }
+.card .open {
+  margin-top: auto;
+  padding: 9px 14px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  font-size: .94rem;
+  text-align: center;
+  text-decoration: none;
+}
+.card .open:hover { opacity: .88; }
+.card .open:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tag {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 1px 9px;
+  border-radius: 4px;
+  background: var(--tag);
+  color: var(--tag-ink);
+  font-size: .78rem;
+  font-weight: 600;
+}
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .86rem; }
+td:last-child { white-space: nowrap; font-weight: 600; }
+ol, ul { margin: 0; padding-left: 1.4em; }
+li { margin-bottom: 6px; }
+.note { margin-top: 16px; padding: 12px 16px; border-radius: 6px; background: var(--note); font-size: .94rem; }
+footer { margin-top: 56px; padding: 24px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+footer p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ColabUMA</h1>
+    <p>Google Colab で開いて「すべて実行」を押し、構造ファイルを選ぶだけ。Meta の機械学習ポテンシャル UMA による構造最適化・スキャン・遷移状態探索と、DFT の一点計算ができます。</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="notebooks">
+      <h2 id="notebooks">ノートブック</h2>
+      <div class="cards">
+        <article class="card">
+          <h3>ColabUMA Opt</h3>
+          <p>構造最適化。振動計算と、最適化した構造での DFT 一点計算もできます。</p>
+          <dl>
+            <dt>入力</dt><dd>xyz または gjf を1つ</dd>
+            <dt>主な出力</dt><dd>最適化構造、GaussView で開ける経路と振動、DFT のエネルギー</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Opt.ipynb" aria-label="ColabUMA Opt を Colab で開く">Colab で開く</a>
+        </article>
+
+        <article class="card">
+          <h3>ColabUMA Scan</h3>
+          <p>結合長・角度・二面角の緩和スキャン。Gaussian の <code>opt=modredundant</code> の <code>S</code> 指定に相当します。</p>
+          <dl>
+            <dt>入力</dt><dd>xyz または gjf を1つ</dd>
+            <dt>主な出力</dt><dd>各点のエネルギー（CSV）と構造、スキャン前後の最適化構造</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Scan.ipynb" aria-label="ColabUMA Scan を Colab で開く">Colab で開く</a>
+        </article>
+
+        <article class="card">
+          <h3>ColabUMA TS</h3>
+          <p>遷移状態探索。DMF で経路を求めて Sella で最適化し、虚振動・簡易 IRC・DFT 一点計算まで行います。</p>
+          <dl>
+            <dt>入力</dt><dd>原子の順番がそろった反応物と生成物、または TS の初期構造</dd>
+            <dt>主な出力</dt><dd>TS 構造、虚振動、反応経路、Gaussian 用 gjf、活性化エネルギー</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_TS.ipynb" aria-label="ColabUMA TS を Colab で開く">Colab で開く</a>
+        </article>
+
+        <article class="card">
+          <h3>ColabUMA Workflow</h3>
+          <p>最適化 → スキャン → 遷移状態 → DFT 一点計算を、1つのセッションで続けて実行します。インストールとモデル読み込みは1回で済みます。</p>
+          <dl>
+            <dt>入力</dt><dd>xyz または gjf を1つ</dd>
+            <dt>主な出力</dt><dd>全段階の結果をまとめた ZIP</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Workflow.ipynb" aria-label="ColabUMA Workflow を Colab で開く">Colab で開く</a>
+        </article>
+
+        <article class="card">
+          <div><span class="tag">トークン不要</span></div>
+          <h3>ColabSPE</h3>
+          <p>入力した構造のまま、GPU4PySCF で DFT の一点計算だけを行います。UMA は使いません。</p>
+          <dl>
+            <dt>入力</dt><dd>xyz または gjf を1つ</dd>
+            <dt>主な出力</dt><dd>エネルギーを書き込んだ xyz、DFT のエネルギー（CSV）</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabSPE.ipynb" aria-label="ColabSPE を Colab で開く">Colab で開く</a>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="which">
+      <h2 id="which">どれを使うか</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th scope="col">やりたいこと</th><th scope="col">ノート</th></tr></thead>
+          <tbody>
+            <tr><td>構造を最適化したい</td><td>Opt</td></tr>
+            <tr><td>結合や二面角を動かしてエネルギー変化を見たい</td><td>Scan</td></tr>
+            <tr><td>反応物と生成物、または初期構造から TS を探したい</td><td>TS</td></tr>
+            <tr><td>1つの入力構造から TS まで続けて計算したい</td><td>Workflow</td></tr>
+            <tr><td>手元の構造のエネルギーを DFT で計算したい</td><td>ColabSPE</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="usage">
+      <h2 id="usage">使い方</h2>
+      <ol>
+        <li>上の「Colab で開く」からノートを開く</li>
+        <li><strong>ランタイム → ランタイムのタイプを変更</strong> で <strong>T4 GPU</strong> を選ぶ</li>
+        <li>入力フォームに、出力名・電荷・スピン多重度などを入れる</li>
+        <li><strong>ランタイム → すべて実行</strong> を押す</li>
+        <li>ファイル選択ボタンが出たら構造ファイルを選ぶ。あとは放置できます</li>
+        <li>結果を確認し、ZIP をダウンロードする</li>
+      </ol>
+      <div class="note">
+        <strong>初回のみ（ColabSPE 以外）：</strong>
+        <a href="https://huggingface.co/facebook/UMA">facebook/UMA</a> でアクセスを申請して FAIR Chemistry License v1 に同意し、承認後に Read 権限の<a href="https://huggingface.co/settings/tokens">トークン</a>を作ります。Colab の左サイドバーの🔑（シークレット）に名前 <code>HF_TOKEN</code> で登録し、ノートブックからのアクセスをオンにしてください。
+      </div>
+    </section>
+
+    <section aria-labelledby="notes">
+      <h2 id="notes">注意事項</h2>
+      <ul>
+        <li>UMA は機械学習ポテンシャルであり、DFT の代わりにはなりません。最終的なエネルギー比較は DFT で確認してください。</li>
+        <li>最適化は鞍点に収束することがあります。重要な構造は振動計算で確認してください。</li>
+        <li>TS ノートで見つかるのは UMA のポテンシャル面の TS です。最終的には DFT で TS 最適化と IRC を行ってください。</li>
+        <li>扱える元素は、UMA を使うノートでは H〜Bi、ColabSPE では H〜Rn です。周期系には対応していません。</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>詳しい入力項目、出力ファイル、引用文献は <a href="https://github.com/RChibaChiba/ColabUMA#readme">GitHub の README</a> にあります。</p>
+    <p>ノートと共通コードは <a href="https://github.com/RChibaChiba/ColabUMA/blob/main/LICENSE">MIT License</a>。UMA のモデル重みは <a href="https://huggingface.co/facebook/UMA">FAIR Chemistry License v1</a> に従います。</p>
+  </footer>
+</div>
+</body>
+</html>

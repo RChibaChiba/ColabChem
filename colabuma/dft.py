@@ -1,8 +1,9 @@
 """DFT の一点計算（gpu4pyscf。GPU で使えなければ CPU の PySCF）。
 
-UMA で求めた構造で DFT のエネルギーを計算する。反応物・TS・生成物なら活性化エネルギーも比べる。
+UMA で求めた構造や入力の構造で DFT のエネルギーを計算する。反応物・TS・生成物なら活性化エネルギーも比べる。
 """
 import time
+from dataclasses import dataclass
 
 from .ui import ColabUMAError, ProgressDisplay, bar_row, ok, warn
 
@@ -18,6 +19,21 @@ FUNCTIONALS = {
     "r2SCAN-D4": ("r2scan", "d4"),
 }
 BASIS_SETS = ["def2-SVP", "def2-TZVP", "def2-TZVPD"]
+MAX_Z = 86  # def2 基底関数があるのは H〜Rn
+
+
+@dataclass
+class Job:
+    """UMA を使わない一点計算（ColabSPE）のフォームの値。"""
+    out_prefix: str
+    charge: int
+    multiplicity: int
+    functional: str
+    basis: str
+
+    def condition_lines(self):
+        return [f"電荷: {self.charge}", f"スピン多重度: {self.multiplicity}",
+                f"汎関数: {self.functional}", f"基底関数: {self.basis}"]
 
 
 def parse_method(functional, basis):
@@ -70,6 +86,8 @@ def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100):
 def run(points, charge, multiplicity, functional, basis):
     """points は [(名前, atoms), ...]。各構造の一点計算の結果を返す。"""
     functional, basis = parse_method(functional, basis)
+    if max(int(a.numbers.max()) for _, a in points) > MAX_Z:
+        raise ColabUMAError("def2 基底関数がない元素が含まれています。", "扱えるのは H〜Rn（原子番号1〜86）です。")
     name, _ = _backend()
     if not name.startswith("gpu"):
         warn("gpu4pyscf が使えないため、CPU の PySCF で計算します。かなり時間がかかります。",
@@ -104,8 +122,8 @@ def run(points, charge, multiplicity, functional, basis):
     return {"functional": functional, "basis": basis, "backend": name, "points": results}
 
 
-def report(dft_res, uma_rows):
-    """UMA と DFT のエネルギー差を並べて表示する。(files, log) を返す。"""
+def report(dft_res, uma_rows, geometry="UMA の構造"):
+    """UMA と DFT のエネルギー差を並べて表示する。geometry は構造の説明。(files, log) を返す。"""
     import pandas as pd
     from IPython.display import display
 
@@ -123,9 +141,9 @@ def report(dft_res, uma_rows):
         row["SCF収束"] = "はい" if p["converged"] else "いいえ"
         rows.append(row)
     df = pd.DataFrame(rows)
-    print(f"DFT 一点計算（{dft_res['functional']}/{dft_res['basis']}、UMA の構造）：")
+    print(f"DFT 一点計算（{dft_res['functional']}/{dft_res['basis']}、{geometry}）：")
     display(df.style.hide(axis="index"))
-    log = [f"[DFT一点計算] {dft_res['functional']}/{dft_res['basis']}（{dft_res['backend']}、密度フィッティング、UMAの構造）"]
+    log = [f"[DFT一点計算] {dft_res['functional']}/{dft_res['basis']}（{dft_res['backend']}、密度フィッティング、{geometry}）"]
     log += [f"{p['label']}: E = {p['energy']:.10f} Ha  converged = {p['converged']}  nao = {p['nao']}  "
             f"{p['seconds']:.1f} s" for p in pts]
     if len(pts) == 3 and pts[1]["label"] == "TS":
