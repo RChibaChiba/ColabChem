@@ -2,7 +2,7 @@
 
 | ノート | 内容 | 開く |
 |---|---|---|
-| ColabUMA | 構造最適化 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA.ipynb) |
+| ColabUMA Opt | 構造最適化 → DFT一点計算 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Opt.ipynb) |
 | ColabUMA Scan | 緩和スキャン（結合長・角度・二面角） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Scan.ipynb) |
 | ColabUMA TS | 遷移状態探索（DMF → Sella → DFT一点計算） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_TS.ipynb) |
 | ColabUMA Workflow | 最適化 → スキャン → 遷移状態を1つのセッションで続けて実行 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Workflow.ipynb) |
@@ -16,6 +16,7 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 - xyz ファイル、Gaussian の入力ファイル（.gjf / .com）からの構造最適化（LBFGS / BFGS / FIRE）
 - 最適化の経路を Gaussian の log 形式でも出力（GaussView で各ステップの構造とエネルギー変化を確認できる）
 - 振動計算で虚振動の有無を確認（振動数は Gaussian の freq 出力の書式でも出力し、GaussView でモードを見られる）
+- 最適化した構造での DFT の一点計算（GPU4PySCF）
 - 3D表示、エネルギー（eV・Hartree）、収束グラフの表示と、結果一式のZIPダウンロード
 
 - 結合長・角度・二面角の緩和スキャンと、スキャン前後の最適化（[ColabUMA Scan](#colabuma-scan)）
@@ -64,6 +65,8 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 | 数値指定の fmax | 0.05 | 収束判定で「数値指定」を選んだときに使用 |
 | 最大ステップ数 | 500 | |
 | 振動計算 | オフ | オンなら最適化後に虚振動の有無を確認 |
+| DFT 一点計算 | オン | 最適化した構造で DFT のエネルギーを計算する（GPU4PySCF、密度フィッティング）。UMA の構造のままで、DFT で最適化し直すものではない |
+| 汎関数 / 基底関数 | ωB97M-V / def2-SVP | ωB97M-V/def2-TZVPD が UMA（OMol25）の学習データと同じ計算レベル。T4 では def2-TZVPD は時間がかかる |
 
 xyzファイルは1ファイル1構造です。複数の構造が入っている場合は先頭だけを使います。サンプルは [examples/example.xyz](examples/example.xyz) と [examples/example.gjf](examples/example.gjf) にあります。
 
@@ -79,10 +82,11 @@ Gaussianの入力ファイル（拡張子 .gjf / .com / .gjc）からは**構造
 | `<出力名>_log.txt` | 入力条件、ソフトのバージョン、各ステップのエネルギーと fmax |
 | `<出力名>_freq.txt` | 振動数の一覧（振動計算オンのとき） |
 | `<出力名>_freq.log` | 振動数と基準振動を Gaussian の freq 出力の書式で書いたもの（振動計算オンのとき） |
+| `<出力名>_dft.csv` | DFT 一点計算のエネルギー（DFT 一点計算オンのとき） |
 
 ## ColabUMA Scan
 
-[ColabUMA_Scan.ipynb](ColabUMA_Scan.ipynb) は、結合長・角度・二面角を一定の刻みで動かしながら残りの自由度を最適化する緩和スキャンのノートです。Gaussian の `opt=modredundant` の `S` 指定に相当します。事前準備と使い方の流れは ColabUMA と同じです。
+[ColabUMA_Scan.ipynb](ColabUMA_Scan.ipynb) は、結合長・角度・二面角を一定の刻みで動かしながら残りの自由度を最適化する緩和スキャンのノートです。Gaussian の `opt=modredundant` の `S` 指定に相当します。事前準備と使い方の流れは ColabUMA Opt と同じです。
 
 | 項目 | 既定値 | 説明 |
 |---|---|---|
@@ -92,7 +96,7 @@ Gaussianの入力ファイル（拡張子 .gjf / .com / .gjc）からは**構造
 | `scan_step_size` | 10 | 刻み幅（Å または 度）。負の値で逆向き |
 | `opt_before_scan` | オン | スキャンの前に入力構造を拘束なしで最適化する |
 | `opt_after_scan` | オン | スキャンの後に拘束なしで最適化する。開始構造は、最後の点からさかのぼって最初に見つかる極小 |
-| 収束判定 | normal（0.02） | 選択肢は ColabUMA と同じ。既定値だけが違う |
+| 収束判定 | normal（0.02） | 選択肢は ColabUMA Opt と同じ。既定値だけが違う |
 
 「後の最適化」は、行き過ぎたスキャンの端から戻って極小を取るためのものです。0.1 kcal/mol 未満の小さな凹凸と未収束の点は無視します。スキャンの端でもエネルギーが下がり続けている場合や、最初の点まで戻った場合は注意を表示します。
 
@@ -146,7 +150,7 @@ Gaussianの入力ファイル（拡張子 .gjf / .com / .gjc）からは**構造
 
 ## ColabUMA Workflow
 
-Colab ではノートごとに別のセッション（別のマシン）が割り当てられるため、ColabUMA → ColabUMA_Scan → ColabUMA_TS と別々のノートで続けると、そのたびにインストールとモデルのダウンロードをやり直すことになります。
+Colab ではノートごとに別のセッション（別のマシン）が割り当てられるため、ColabUMA_Opt → ColabUMA_Scan → ColabUMA_TS と別々のノートで続けると、そのたびにインストールとモデルのダウンロードをやり直すことになります。
 
 [ColabUMA_Workflow.ipynb](ColabUMA_Workflow.ipynb) は、1つのセッションのまま **構造最適化 → スキャン → 遷移状態 → DFT一点計算** を続けて実行するノートです。前の段階の構造はメモリ上でそのまま次に渡します。
 
@@ -194,7 +198,11 @@ ColabUMA TS で遷移状態探索を使った場合は、次も引用してく�
 - S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 2798–2811 (2024).（Direct MaxFlux）
 - S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 7176–7187 (2024); **21**, 3513–3522 (2025).（FB-ENM、CFB-ENM）
 - E. D. Hermes, K. Sargsyan, H. N. Najm, J. Zádor, *J. Chem. Theory Comput.* **18**, 6974–6988 (2022).（Sella）
-- DFT の一点計算を使った場合：PySCF（Q. Sun *et al.*, *J. Chem. Phys.* **153**, 024109 (2020)）と GPU4PySCF（X. Wu *et al.*, arXiv:2404.09452 (2024)）
+
+DFT の一点計算（ColabUMA Opt、TS、Workflow）を使った場合は、次も引用してください。
+
+- PySCF（Q. Sun *et al.*, *J. Chem. Phys.* **153**, 024109 (2020)）
+- GPU4PySCF（X. Wu *et al.*, arXiv:2404.09452 (2024)）
 
 ## ライセンス
 
@@ -215,9 +223,9 @@ ColabUMA TS で遷移状態探索を使った場合は、次も引用してく�
 | [cyipopt](https://github.com/mechmotum/cyipopt) | TS、Workflow | EPL-2.0 |
 | [Ipopt](https://github.com/coin-or/Ipopt)（apt の `coinor-libipopt-dev`、3.11 系） | TS、Workflow | CPL-1.0（3.13 以降は EPL-2.0） |
 | MUMPS（Ipopt が使う線形ソルバー。apt で一緒に入る） | TS、Workflow | CeCILL-C |
-| [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)（`gpu4pyscf-cuda12x`、`gpu4pyscf-libxc-cuda12x`） | TS、Workflow（DFT） | Apache-2.0 |
-| [PySCF](https://github.com/pyscf/pyscf) | TS、Workflow（DFT） | Apache-2.0 |
-| [pyscf-dispersion](https://github.com/pyscf/dispersion) | TS、Workflow（DFT） | Apache-2.0 |
+| [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)（`gpu4pyscf-cuda12x`、`gpu4pyscf-libxc-cuda12x`） | Opt、TS、Workflow（DFT） | Apache-2.0 |
+| [PySCF](https://github.com/pyscf/pyscf) | Opt、TS、Workflow（DFT） | Apache-2.0 |
+| [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt、TS、Workflow（DFT） | Apache-2.0 |
 
 ここに書いたライセンスは、2026年11月時点で各パッケージの配布元（PyPI と Ubuntu のパッケージ）に書かれているものです。ほかにも、これらが依存するライブラリ（PyTorch、NumPy、SciPy など）が一緒にインストールされます。正確な条件は、それぞれの配布元で確認してください。
 

@@ -1,6 +1,6 @@
 """DFT の一点計算（gpu4pyscf。GPU で使えなければ CPU の PySCF）。
 
-UMA で求めた反応物・TS・生成物の構造で DFT のエネルギーを計算し、活性化エネルギーを比べる。
+UMA で求めた構造で DFT のエネルギーを計算する。反応物・TS・生成物なら活性化エネルギーも比べる。
 """
 import time
 
@@ -115,9 +115,10 @@ def report(dft_res, uma_rows):
     ubase = uma.get(pts[0]["label"])
     rows = []
     for p in pts:
-        row = {"": p["label"], "DFT (Hartree)": round(p["energy"], 8),
-               f"ΔE DFT（{pts[0]['label']}基準, kcal/mol）": round((p["energy"] - base) * KCALMOL_PER_HARTREE, 2)}
-        if p["label"] in uma and ubase is not None:
+        row = {"": p["label"], "DFT (Hartree)": round(p["energy"], 8)}
+        if len(pts) > 1:  # 1構造だけなら比べる相手がない
+            row[f"ΔE DFT（{pts[0]['label']}基準, kcal/mol）"] = round((p["energy"] - base) * KCALMOL_PER_HARTREE, 2)
+        if len(pts) > 1 and p["label"] in uma and ubase is not None:
             row[f"ΔE UMA（kcal/mol）"] = round((uma[p["label"]] - ubase) / EV_PER_HARTREE * KCALMOL_PER_HARTREE, 2)
         row["SCF収束"] = "はい" if p["converged"] else "いいえ"
         rows.append(row)
