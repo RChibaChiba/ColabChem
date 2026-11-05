@@ -198,8 +198,28 @@ ColabUMA TS で遷移状態探索を使った場合は、次も引用してく�
 
 ## ライセンス
 
-- ノートのコード：[MIT License](LICENSE)
-- UMAのモデル重み：[FAIR Chemistry License v1](https://huggingface.co/facebook/UMA) に従います
+- ノートと共通コード（`colabuma/`）：[MIT License](LICENSE)
+- UMAのモデル重み：[FAIR Chemistry License v1](https://huggingface.co/facebook/UMA) に従います。重みはこのリポジトリには含まれず、Hugging Face で各自がライセンスに同意してからダウンロードします
+
+### 実行時にインストールするソフトウェア
+
+このリポジトリには下のソフトウェアを含めていません。ノートを実行したときに PyPI または Ubuntu のパッケージ（apt）から Colab のセッションにインストールし、それぞれのライセンスに従って使います。
+
+| ソフトウェア | 使うノート | ライセンス |
+|---|---|---|
+| [fairchem-core](https://github.com/facebookresearch/fairchem) | すべて | MIT |
+| [ASE](https://gitlab.com/ase/ase) | すべて | LGPL-2.1-or-later |
+| [py3Dmol](https://github.com/3dmol/3Dmol.js) | すべて | MIT |
+| [PyDMF](https://github.com/shin1koda/dmf)（`pydmf`） | TS、Workflow | MIT |
+| [Sella](https://github.com/zadorlab/sella) | TS、Workflow | LGPL-3.0 |
+| [cyipopt](https://github.com/mechmotum/cyipopt) | TS、Workflow | EPL-2.0 |
+| [Ipopt](https://github.com/coin-or/Ipopt)（apt の `coinor-libipopt-dev`、3.11 系） | TS、Workflow | CPL-1.0（3.13 以降は EPL-2.0） |
+| MUMPS（Ipopt が使う線形ソルバー。apt で一緒に入る） | TS、Workflow | CeCILL-C |
+| [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)（`gpu4pyscf-cuda12x`、`gpu4pyscf-libxc-cuda12x`） | TS、Workflow（DFT） | Apache-2.0 |
+| [PySCF](https://github.com/pyscf/pyscf) | TS、Workflow（DFT） | Apache-2.0 |
+| [pyscf-dispersion](https://github.com/pyscf/dispersion) | TS、Workflow（DFT） | Apache-2.0 |
+
+ここに書いたライセンスは、2026年11月時点で各パッケージの配布元（PyPI と Ubuntu のパッケージ）に書かれているものです。ほかにも、これらが依存するライブラリ（PyTorch、NumPy、SciPy など）が一緒にインストールされます。正確な条件は、それぞれの配布元で確認してください。
 
 ## 公開する前に
 
