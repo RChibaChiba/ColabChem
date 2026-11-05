@@ -1,11 +1,14 @@
 # ColabUMA
 
+[ホームページ](https://rchibachiba.github.io/ColabUMA/)
+
 | ノート | 内容 | 開く |
 |---|---|---|
 | ColabUMA Opt | 構造最適化 → DFT一点計算 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Opt.ipynb) |
 | ColabUMA Scan | 緩和スキャン（結合長・角度・二面角） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Scan.ipynb) |
 | ColabUMA TS | 遷移状態探索（DMF → Sella → DFT一点計算） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_TS.ipynb) |
 | ColabUMA Workflow | 最適化 → スキャン → 遷移状態を1つのセッションで続けて実行 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Workflow.ipynb) |
+| ColabSPE | DFT一点計算のみ（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabSPE.ipynb) |
 
 Google Colabで開いて「すべて実行」するだけで、Metaの機械学習ポテンシャル **UMA** を使って分子の構造最適化、緩和スキャン、遷移状態探索ができるノートブックです。xyz か Gaussian の gjf で構造を入れて、電荷とスピン多重度を指定するだけで使えます。
 
@@ -22,6 +25,7 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 - 結合長・角度・二面角の緩和スキャンと、スキャン前後の最適化（[ColabUMA Scan](#colabuma-scan)）
 - 反応物と生成物からの遷移状態探索（DMF → Sella）、虚振動の確認、簡易IRC、DFT の一点計算（[ColabUMA TS](#colabuma-ts)）
 - 最適化 → スキャン → 遷移状態を、インストールとモデル読み込み1回で続けて実行（[ColabUMA Workflow](#colabuma-workflow)）
+- 手元の構造をそのまま DFT で一点計算（[ColabSPE](#colabspe)）
 
 対象外：IRC そのもの（TS ノートの簡易IRCは、虚振動の向きにずらして最適化するだけ）、周期系（結晶・表面）の最適化
 
@@ -158,6 +162,24 @@ Colab ではノートごとに別のセッション（別のマシン）が割�
 - 途中の段階だけやり直したいときは、フォームを直してそのセルから下を実行する（**ランタイム → 以降のセルを実行**）。インストールとモデル読み込みはスキップされる
 - 結果は全段階を1つの ZIP にまとめる
 
+## ColabSPE
+
+[ColabSPE.ipynb](ColabSPE.ipynb) は、入力した構造のまま GPU4PySCF で DFT の一点計算だけを行うノートです。構造の最適化はしません。UMA を使わないので、[事前準備](#事前準備初回のみ)の Hugging Face のトークンはいりません。fairchem もインストールしません。
+
+| 項目 | 既定値 | 説明 |
+|---|---|---|
+| 電荷 / スピン多重度 | 0 / 1 | gjf に書かれた値ではなくフォームの値を使う。多重度1は RKS、それ以外は UKS |
+| 汎関数 | ωB97M-V | ωB97M-V / B3LYP-D3(BJ) / PBE0-D3(BJ) / M06-2X / r2SCAN-D4 |
+| 基底関数 | def2-SVP | def2-SVP / def2-TZVP / def2-TZVPD |
+
+xyz に複数の構造が入っている場合は先頭だけを計算します。扱える元素は H〜Rn（原子番号1〜86）です。
+
+| ファイル | 内容 |
+|---|---|
+| `<出力名>_spe.xyz` | 計算した構造。コメント行にエネルギーと計算条件 |
+| `<出力名>_dft.csv` | DFT 一点計算のエネルギー |
+| `<出力名>_log.txt` | 入力条件、ソフトのバージョン、計算結果 |
+
 ## コードの構成
 
 ノートのセルはフォームの値を受け取って関数を呼ぶだけにして、計算の中身はリポジトリの [`colabuma/`](colabuma) パッケージにまとめています。各ノートは「2. ファイル選択と事前確認」でこのリポジトリを Colab に取ってきて（`git clone`）読み込みます。ノートを足しても共通部分は増えず、直すときも1か所で済みます。
@@ -186,7 +208,7 @@ Colab ではノートごとに別のセッション（別のマシン）が割�
 
 ## 引用
 
-論文で使う場合は、以下を引用してください。
+論文で使う場合は、以下を引用してください（ColabSPE では UMA を使わないので、下の DFT の文献だけで足ります）。
 
 - B. M. Wood *et al.*, "UMA: A Family of Universal Models for Atoms", arXiv:2506.23971 (2025).
 - D. S. Levine *et al.*, "The Open Molecules 2025 (OMol25) Dataset, Evaluations, and Models", arXiv:2505.08762 (2025).
@@ -199,7 +221,7 @@ ColabUMA TS で遷移状態探索を使った場合は、次も引用してく�
 - S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 7176–7187 (2024); **21**, 3513–3522 (2025).（FB-ENM、CFB-ENM）
 - E. D. Hermes, K. Sargsyan, H. N. Najm, J. Zádor, *J. Chem. Theory Comput.* **18**, 6974–6988 (2022).（Sella）
 
-DFT の一点計算（ColabUMA Opt、TS、Workflow）を使った場合は、次も引用してください。
+DFT の一点計算（ColabUMA Opt、TS、Workflow、ColabSPE）を使った場合は、次も引用してください。
 
 - PySCF（Q. Sun *et al.*, *J. Chem. Phys.* **153**, 024109 (2020)）
 - GPU4PySCF（X. Wu *et al.*, arXiv:2404.09452 (2024)）
@@ -215,7 +237,7 @@ DFT の一点計算（ColabUMA Opt、TS、Workflow）を使った場合は、次
 
 | ソフトウェア | 使うノート | ライセンス |
 |---|---|---|
-| [fairchem-core](https://github.com/facebookresearch/fairchem) | すべて | MIT |
+| [fairchem-core](https://github.com/facebookresearch/fairchem) | ColabSPE 以外 | MIT |
 | [ASE](https://gitlab.com/ase/ase) | すべて | LGPL-2.1-or-later |
 | [py3Dmol](https://github.com/3dmol/3Dmol.js) | すべて | MIT |
 | [PyDMF](https://github.com/shin1koda/dmf)（`pydmf`） | TS、Workflow | MIT |
@@ -223,9 +245,9 @@ DFT の一点計算（ColabUMA Opt、TS、Workflow）を使った場合は、次
 | [cyipopt](https://github.com/mechmotum/cyipopt) | TS、Workflow | EPL-2.0 |
 | [Ipopt](https://github.com/coin-or/Ipopt)（apt の `coinor-libipopt-dev`、3.11 系） | TS、Workflow | CPL-1.0（3.13 以降は EPL-2.0） |
 | MUMPS（Ipopt が使う線形ソルバー。apt で一緒に入る） | TS、Workflow | CeCILL-C |
-| [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)（`gpu4pyscf-cuda12x`、`gpu4pyscf-libxc-cuda12x`） | Opt、TS、Workflow（DFT） | Apache-2.0 |
-| [PySCF](https://github.com/pyscf/pyscf) | Opt、TS、Workflow（DFT） | Apache-2.0 |
-| [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt、TS、Workflow（DFT） | Apache-2.0 |
+| [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)（`gpu4pyscf-cuda12x`、`gpu4pyscf-libxc-cuda12x`） | Opt、TS、Workflow（DFT）、ColabSPE | Apache-2.0 |
+| [PySCF](https://github.com/pyscf/pyscf) | Opt、TS、Workflow（DFT）、ColabSPE | Apache-2.0 |
+| [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt、TS、Workflow（DFT）、ColabSPE | Apache-2.0 |
 
 ここに書いたライセンスは、2026年11月時点で各パッケージの配布元（PyPI と Ubuntu のパッケージ）に書かれているものです。ほかにも、これらが依存するライブラリ（PyTorch、NumPy、SciPy など）が一緒にインストールされます。正確な条件は、それぞれの配布元で確認してください。
 

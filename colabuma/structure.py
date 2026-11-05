@@ -139,7 +139,7 @@ def read_gjf(path, fname):
                             "GaussViewで開いて保存し直すか、「元素記号 x y z」のデカルト座標で書かれているか確認してください。") from None
 
 
-def read_frames(fname, data, charge, multiplicity):
+def read_frames(fname, data, charge, multiplicity, uma=True):
     """アップロードされたファイルの構造をすべて読む。gjf は1構造、xyz は複数構造のこともある。"""
     from ase.io import read as ase_read
 
@@ -165,18 +165,18 @@ def read_frames(fname, data, charge, multiplicity):
                                 "1行目が原子数、2行目がコメント、3行目以降が「元素記号 x y z」（単位Å）の形式か確認してください。"
                                 "Gaussianの入力ファイルなら拡張子を .gjf か .com にしてください。")
         kind = "xyz"
-    return [prepare(a, charge, multiplicity) for a in frames], f"{kind}: {fname}"
+    return [prepare(a, charge, multiplicity, uma) for a in frames], f"{kind}: {fname}"
 
 
-def read_structure(fname, data, charge, multiplicity):
+def read_structure(fname, data, charge, multiplicity, uma=True):
     """先頭の1構造だけを使う。(atoms, 入力の説明) を返す。"""
-    frames, desc = read_frames(fname, data, charge, multiplicity)
+    frames, desc = read_frames(fname, data, charge, multiplicity, uma)
     if len(frames) > 1:
         warn(f"「{fname}」には {len(frames)} 個の構造が入っています。先頭の構造だけを使います。")
     return frames[0], desc
 
 
-def prepare(atoms, charge, multiplicity):
+def prepare(atoms, charge, multiplicity, uma=True):
     # 分子として扱う設定にして、元素・電荷・多重度を確認する
     atoms = atoms.copy()
     atoms.calc = None
@@ -184,7 +184,8 @@ def prepare(atoms, charge, multiplicity):
     atoms.set_pbc(False)
     atoms.set_cell(np.zeros((3, 3)))
     atoms.info = {}
-    check_elements(atoms.numbers)
+    if uma:  # UMA を使わないときの元素の範囲は dft.run で確かめる
+        check_elements(atoms.numbers)
     check_charge_multiplicity(atoms.numbers, charge, multiplicity)
     atoms.info.update({"charge": int(charge), "spin": int(multiplicity)})
     return atoms
@@ -195,6 +196,10 @@ def check_form(fmax, max_steps, multiplicity):
         raise ColabUMAError("収束判定 fmax は正の数にしてください。", "通常は 0.02 eV/Å 程度です。")
     if max_steps < 1:
         raise ColabUMAError("最大ステップ数は1以上にしてください。", "通常は 500 程度です。")
+    check_multiplicity(multiplicity)
+
+
+def check_multiplicity(multiplicity):
     if multiplicity < 1:
         raise ColabUMAError("スピン多重度は1以上の整数にしてください。", "閉殻分子なら1（一重項）です。")
 
