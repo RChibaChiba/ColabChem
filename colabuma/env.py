@@ -245,13 +245,27 @@ def load_calculator(model_name, task_name):
     return FAIRChemCalculator(_model["predictor"], task_name=task_name)
 
 
+def _colabchem_commit():
+    """共通コードを取ってきた git のコミット（短い形）。分からなければ空文字。"""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        r = subprocess.run(["git", "-C", root, "rev-parse", "--short", "HEAD"], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
 def software_lines():
     import platform
 
     import ase
     import numpy as np
 
-    lines = [f"Python {platform.python_version()}", f"ase {ase.__version__}"]
+    from . import __version__
+
+    commit = _colabchem_commit()
+    lines = [f"ColabChem {__version__}" + (f"（コミット {commit}）" if commit else ""),
+             f"Python {platform.python_version()}", f"ase {ase.__version__}"]
     for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "cupy-cuda12x", "cutensor-cu12", "pyscf", "rdkit"):
         if installed(pkg):
             lines.append(f"{pkg} {installed(pkg)}")

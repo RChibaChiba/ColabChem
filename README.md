@@ -61,8 +61,6 @@ If you don't add the secret, the notebook shows a token input box before the fil
 
 For later runs, repeat steps 4–8. The install and the model load are skipped automatically. If you press "Cancel upload" in the file selection, the previous file is used again.
 
-Time for the first setup (install and model download): <!-- TODO: measure and fill in --> about X min
-
 ### Input form
 
 | Item | Default | Description |
@@ -271,6 +269,8 @@ Notebook cells only take the form values and call functions. The calculations li
 | `output.py` | log.txt and the ZIP |
 
 To try code from another branch, set `COLABUMA_REF` in cell "2." to that branch name (restart the session if the code was already fetched). If you clone the repository locally and open a notebook from it, the `colabuma` in that folder is used.
+
+The notebooks normally use the latest code on main. To reproduce the version used in a paper, set `COLABUMA_REF` to a release tag (for example `v0.3.0`). The version and commit used are written under "ソフトウェア" (software) in `log.txt`.
 
 ## Notes
 

@@ -3,4 +3,4 @@
 各ノートブック（ColabUMA_Opt / ColabUMA_Scan / ColabUMA_TS / ColabUMA_Workflow / ColabDFT_SPE / ColabDFT_ESP / ColabDFT_MO）は、
 フォームの値をこのパッケージの関数に渡すだけにしてある。
 """
-__version__ = "0.2.0"
+__version__ = "0.3.0"

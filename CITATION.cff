@@ -10,6 +10,8 @@ abstract: >-
   DFT single points with GPU4PySCF, including views of the electrostatic
   potential and molecular orbitals.
 type: software
+version: 0.3.0
+date-released: "2026-11-07"
 authors:
   - family-names: Chiba
     given-names: Ryuhei
