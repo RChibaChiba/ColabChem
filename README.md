@@ -1,289 +1,317 @@
 # ColabChem
 
-[ホームページ（ColabChem）](https://rchibachiba.github.io/ColabChem/)
+**English** | [日本語](README.ja.md)
 
-| ノート | 内容 | 開く |
+[Homepage (ColabChem)](https://rchibachiba.github.io/ColabChem/)
+
+| Notebook | What it does | Open |
 |---|---|---|
-| ColabUMA Opt | 構造最適化 → DFT一点計算 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Opt.ipynb) |
-| ColabUMA Scan | 緩和スキャン（結合長・角度・二面角） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Scan.ipynb) |
-| ColabUMA TS | 遷移状態探索（DMF → Sella → DFT一点計算） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_TS.ipynb) |
-| ColabUMA Workflow | 最適化 → スキャン → 遷移状態を1つのセッションで続けて実行 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow.ipynb) |
-| ColabDFT SPE | DFT一点計算のみ（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE.ipynb) |
-| ColabDFT ESP | DFT一点計算と静電ポテンシャル（ESP）の3D表示（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_ESP.ipynb) |
+| ColabUMA Opt | Geometry optimization → DFT single point | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Opt.ipynb) |
+| ColabUMA Scan | Relaxed scan (bond length, angle, dihedral) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Scan.ipynb) |
+| ColabUMA TS | Transition state search (DMF → Sella → DFT single point) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_TS.ipynb) |
+| ColabUMA Workflow | Optimization → scan → transition state in one session | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow.ipynb) |
+| ColabDFT SPE | DFT single point only (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE.ipynb) |
+| ColabDFT ESP | DFT single point and 3D view of the electrostatic potential (ESP) (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_ESP.ipynb) |
 
-Google Colabで開いて「すべて実行」するだけで、Metaの機械学習ポテンシャル **UMA** を使って分子の構造最適化、緩和スキャン、遷移状態探索ができるノートブックです。xyz か Gaussian の gjf で構造を入れて、電荷とスピン多重度を指定するだけで使えます。
+Google Colab notebooks for geometry optimization, relaxed scans and transition state searches of molecules with Meta's machine learning potential **UMA**. Open a notebook in Colab and choose "Run all". You only need a structure (xyz or Gaussian gjf), the charge and the spin multiplicity.
 
-<!-- TODO: 画面のスクリーンショットを置く（例：docs/screenshot.png） -->
+The notebooks' forms and messages are in Japanese. This README gives the Japanese label next to the English description where it helps you find an item.
 
-## できること
+<!-- TODO: add a screenshot (e.g. docs/screenshot.png) -->
 
-- xyz ファイル、Gaussian の入力ファイル（.gjf / .com）からの構造最適化（LBFGS / BFGS / FIRE）
-- 最適化の経路を Gaussian の log 形式でも出力（GaussView で各ステップの構造とエネルギー変化を確認できる）
-- 振動計算で虚振動の有無を確認（振動数は Gaussian の freq 出力の書式でも出力し、GaussView でモードを見られる）
-- 最適化した構造での DFT の一点計算（GPU4PySCF）
-- 3D表示、エネルギー（eV・Hartree）、収束グラフの表示と、結果一式のZIPダウンロード
+## Features
 
-- 結合長・角度・二面角の緩和スキャンと、スキャン前後の最適化（[ColabUMA Scan](#colabuma-scan)）
-- 反応物と生成物からの遷移状態探索（DMF → Sella）、虚振動の確認、簡易IRC、DFT の一点計算（[ColabUMA TS](#colabuma-ts)）
-- 最適化 → スキャン → 遷移状態を、インストールとモデル読み込み1回で続けて実行（[ColabUMA Workflow](#colabuma-workflow)）
-- 手元の構造をそのまま DFT で一点計算（[ColabDFT SPE](#colabdft-spe)）
-- 手元の構造の静電ポテンシャル（ESP）を等密度面に色付けして表示（[ColabDFT ESP](#colabdft-esp)）
+- Geometry optimization from an xyz file or a Gaussian input file (.gjf / .com) (LBFGS / BFGS / FIRE)
+- The optimization path is also written as a Gaussian log, so GaussView shows each step's structure and the energy profile
+- Vibrational analysis to check for imaginary frequencies (also written in the format of Gaussian's freq output, so GaussView can animate the modes)
+- DFT single point at the optimized structure (GPU4PySCF)
+- 3D view, energies (eV and Hartree), a convergence plot, and a ZIP of all results to download
 
-対象外：IRC そのもの（TS ノートの簡易IRCは、虚振動の向きにずらして最適化するだけ）、周期系（結晶・表面）の最適化
+- Relaxed scans of a bond length, angle or dihedral, with optimizations before and after the scan ([ColabUMA Scan](#colabuma-scan))
+- Transition state search from a reactant and a product (DMF → Sella), imaginary frequency check, a simple IRC check, and DFT single points ([ColabUMA TS](#colabuma-ts))
+- Optimization → scan → transition state in a row, with a single install and model load ([ColabUMA Workflow](#colabuma-workflow))
+- DFT single point of your own structure as it is ([ColabDFT SPE](#colabdft-spe))
+- ESP of your own structure, colored on an electron density isosurface ([ColabDFT ESP](#colabdft-esp))
 
-## 事前準備（初回のみ）
+Not covered: a real IRC calculation (the simple IRC check in the TS notebook only displaces along the imaginary mode and optimizes), and periodic systems (crystals, surfaces).
 
-モデルの重み [facebook/UMA](https://huggingface.co/facebook/UMA) はアクセス申請が必要です。
+## Before you start (first time only)
 
-1. [Hugging Face](https://huggingface.co/join) のアカウントを作る
-2. [facebook/UMA](https://huggingface.co/facebook/UMA) のページでアクセスを申請し、FAIR Chemistry License v1 に同意する（承認されるまで待つ）
-3. [Access Tokens](https://huggingface.co/settings/tokens) で **Read** 権限のトークンを作る
-4. Colabでノートを開き、左サイドバーの🔑（シークレット）に名前 `HF_TOKEN`、値にトークンを登録して「ノートブックからのアクセス」をオンにする
+The model weights, [facebook/UMA](https://huggingface.co/facebook/UMA), require an access request.
 
-シークレットに登録しなかった場合は、ファイル選択の前にトークンの入力欄が出ます。トークンはノートには保存されません。
+1. Create a [Hugging Face](https://huggingface.co/join) account
+2. Request access on the [facebook/UMA](https://huggingface.co/facebook/UMA) page and accept the FAIR Chemistry License v1 (wait for approval)
+3. Create a token with **Read** permission under [Access Tokens](https://huggingface.co/settings/tokens)
+4. Open a notebook in Colab. In the 🔑 (Secrets) panel of the left sidebar, add a secret named `HF_TOKEN` with the token as its value, and turn on "Notebook access"
 
-## 使い方
+If you don't add the secret, the notebook shows a token input box before the file selection. The token is not saved in the notebook.
 
-1. 上の「Open in Colab」バッジからノートを開く
-2. **ランタイム → ランタイムのタイプを変更** で **T4 GPU** を選ぶ
-3. 初回のみ、シークレットに `HF_TOKEN` を登録してノートからのアクセスを許可する
-4. 「1. 入力フォーム」で出力名、電荷、スピン多重度、収束判定を指定する
-5. **ランタイム → すべて実行** を押す
-6. 「2. ファイル選択と事前確認」にファイル選択ボタンが出るので、xyz または gjf を選ぶ。あとはインストールも計算も放置できます
-7. 3D表示、エネルギー、収束グラフを確認する
-8. 結果のZIPをダウンロードする
+## How to use
 
-2回目以降は手順4〜8を繰り返すだけです。インストールとモデル読み込みは自動でスキップされます。ファイル選択で Cancel upload を押すと、前回のファイルをそのまま使います。
+1. Open a notebook from its "Open in Colab" badge above
+2. Choose **Runtime → Change runtime type** and select **T4 GPU**
+3. First time only: add `HF_TOKEN` to the secrets and allow notebook access
+4. In "1. 入力フォーム" (input form), set the output name, charge, spin multiplicity and convergence criterion
+5. Choose **Runtime → Run all**
+6. A file selection button appears in "2. ファイル選択と事前確認" (file selection and checks). Choose an xyz or gjf file. From here on, the install and the calculation run unattended
+7. Check the 3D view, the energies and the convergence plot
+8. Download the ZIP of the results
 
-初回のセットアップ（インストールとモデルのダウンロード）にかかる時間：<!-- TODO: 実測して記入 --> 約 X 分
+For later runs, repeat steps 4–8. The install and the model load are skipped automatically. If you press "Cancel upload" in the file selection, the previous file is used again.
 
-### 入力項目
+Time for the first setup (install and model download): <!-- TODO: measure and fill in --> about X min
 
-| 項目 | 既定値 | 説明 |
+### Input form
+
+| Item | Default | Description |
 |---|---|---|
-| 出力名 | `result` | 出力ファイル名の接頭辞 |
-| 電荷 | 0 | 分子全体の電荷 |
-| スピン多重度 | 1 | 2S+1。電子数と偶奇が合わなければエラー |
-| モデル | uma-s-1p1 | uma-s-1p1 / uma-s-1p2 / uma-m-1p1 |
-| タスク | omol | v1は分子用のomolのみ |
-| 最適化アルゴリズム | LBFGS | LBFGS / BFGS / FIRE（ASE） |
-| 収束判定 | loose（0.05） | fmax（eV/Å）。loose 0.05 / normal 0.02（Gaussian の既定と同程度）/ tight 0.001（Gaussian の opt=tight と同程度）/ 数値指定 |
-| 数値指定の fmax | 0.05 | 収束判定で「数値指定」を選んだときに使用 |
-| 最大ステップ数 | 500 | |
-| 振動計算 | オフ | オンなら最適化後に虚振動の有無を確認 |
-| DFT 一点計算 | オフ | 最適化した構造で DFT のエネルギーを計算する（GPU4PySCF、密度フィッティング）。UMA の構造のままで、DFT で最適化し直すものではない |
-| 汎関数 / 基底関数 | B3LYP-D3(BJ) / def2-SVP | 既定は計算の速さを優先。ωB97M-V/def2-TZVPD が UMA（OMol25）の学習データと同じ計算レベルだが、T4 では時間がかかる |
+| Output name | `result` | Prefix of the output file names |
+| Charge | 0 | Total charge of the molecule |
+| Spin multiplicity | 1 | 2S+1. An error if it does not match the parity of the electron count |
+| Model | uma-s-1p1 | uma-s-1p1 / uma-s-1p2 / uma-m-1p1 |
+| Task | omol | Only omol (molecules) in v1 |
+| Optimizer | LBFGS | LBFGS / BFGS / FIRE (ASE) |
+| Convergence | loose (0.05) | fmax (eV/Å). loose 0.05 / normal 0.02 (about Gaussian's default) / tight 0.001 (about Gaussian's opt=tight) / custom |
+| Custom fmax | 0.05 | Used when "数値指定" (custom) is chosen for the convergence |
+| Max steps | 500 | |
+| Vibrational analysis | Off | If on, checks for imaginary frequencies after the optimization |
+| DFT single point | Off | Computes the DFT energy at the optimized structure (GPU4PySCF, density fitting). The structure stays the UMA one; it is not reoptimized with DFT |
+| Functional / basis set | B3LYP-D3(BJ) / def2-SVP | The default favors speed. ωB97M-V/def2-TZVPD is the level of theory of UMA's training data (OMol25), but it is slow on a T4 |
+| DFT time limit | 60 min | Time limit for the DFT single points (total over all structures). When it is exceeded, DFT is skipped and the UMA results are saved. 0 means no limit ([DFT memory and time](#dft-memory-and-time)) |
 
-xyzファイルは1ファイル1構造です。複数の構造が入っている場合は先頭だけを使います。サンプルは [examples/example.xyz](examples/example.xyz) と [examples/example.gjf](examples/example.gjf) にあります。
+An xyz file holds one structure. If it holds several, only the first is used. Examples: [examples/example.xyz](examples/example.xyz) and [examples/example.gjf](examples/example.gjf).
 
-Gaussianの入力ファイル（拡張子 .gjf / .com / .gjc）からは**構造だけ**を読み込みます。ルートセクション（計算方法・基底関数など）は無視し、電荷と多重度はフォームの値を使います（gjfの値と違うときは注意を表示します）。デカルト座標のほか、GaussViewが書く原子タイプ付きの行（`C-CA--0.1`）や凍結フラグ、フラグメント指定、Z-matrix にも対応しています。`--Link1--` がある場合は最初のジョブの構造を使います。
+From a Gaussian input file (.gjf / .com / .gjc), **only the structure** is read. The route section (method, basis set, etc.) is ignored, and the charge and multiplicity come from the form (a note is shown if they differ from the gjf). Besides Cartesian coordinates, the reader handles the atom-type lines written by GaussView (`C-CA--0.1`), freeze flags, fragment labels and Z-matrices. If there is a `--Link1--`, the structure of the first job is used.
 
-### 出力（ZIPの中身）
+### Output (contents of the ZIP)
 
-| ファイル | 内容 |
+| File | Contents |
 |---|---|
-| `<出力名>_opt.xyz` | 最適化後の構造。コメント行にエネルギーと計算条件 |
-| `<出力名>_opt.log` | 最適化の全ステップを Gaussian の opt 出力と同じ書式で書いたもの。GaussView で開くと経路のアニメーションとエネルギー変化のグラフが見られる |
-| `<出力名>_traj.xyz` | 最適化の全ステップ（複数構造xyz） |
-| `<出力名>_log.txt` | 入力条件、ソフトのバージョン、各ステップのエネルギーと fmax |
-| `<出力名>_freq.txt` | 振動数の一覧（振動計算オンのとき） |
-| `<出力名>_freq.log` | 振動数と基準振動を Gaussian の freq 出力の書式で書いたもの（振動計算オンのとき） |
-| `<出力名>_dft.csv` | DFT 一点計算のエネルギー（DFT 一点計算オンのとき） |
+| `<output name>_opt.xyz` | Optimized structure. Energy and settings in the comment line |
+| `<output name>_opt.log` | All optimization steps in the format of Gaussian's opt output. GaussView shows the path animation and the energy plot |
+| `<output name>_traj.xyz` | All optimization steps (multi-structure xyz) |
+| `<output name>_log.txt` | Input settings, software versions, energy and fmax of each step |
+| `<output name>_freq.txt` | List of frequencies (when vibrational analysis is on) |
+| `<output name>_freq.log` | Frequencies and normal modes in the format of Gaussian's freq output (when vibrational analysis is on) |
+| `<output name>_dft.csv` | DFT single point energy (when DFT single point is on) |
 
 ## ColabUMA Scan
 
-[ColabUMA_Scan.ipynb](ColabUMA_Scan.ipynb) は、結合長・角度・二面角を一定の刻みで動かしながら残りの自由度を最適化する緩和スキャンのノートです。Gaussian の `opt=modredundant` の `S` 指定に相当します。事前準備と使い方の流れは ColabUMA Opt と同じです。
+[ColabUMA_Scan.ipynb](ColabUMA_Scan.ipynb) runs a relaxed scan: it moves a bond length, angle or dihedral in fixed steps and optimizes the remaining degrees of freedom. It corresponds to the `S` entry of Gaussian's `opt=modredundant`. Setup and usage are the same as for ColabUMA Opt.
 
-| 項目 | 既定値 | 説明 |
+| Item | Default | Description |
 |---|---|---|
-| `scan_atoms` | `1 2 3 4` | 原子番号（1始まり）。2個なら結合長、3個なら角度、4個なら二面角 |
-| `scan_start` | 空欄 | 開始値（Å または 度）。空欄なら入力構造の値（前の最適化がオンなら最適化後の値） |
-| `scan_n_steps` | 36 | 刻みの回数。計算する点の数はこれに1を足した数 |
-| `scan_step_size` | 10 | 刻み幅（Å または 度）。負の値で逆向き |
-| `opt_before_scan` | オン | スキャンの前に入力構造を拘束なしで最適化する |
-| `opt_after_scan` | オン | スキャンの後に拘束なしで最適化する。開始構造は、最後の点からさかのぼって最初に見つかる極小 |
-| 収束判定 | normal（0.02） | 選択肢は ColabUMA Opt と同じ。既定値だけが違う |
+| `scan_atoms` | `1 2 3 4` | Atom numbers (starting at 1). 2 atoms for a bond length, 3 for an angle, 4 for a dihedral |
+| `scan_start` | empty | Start value (Å or degrees). If empty, the value in the input structure (after the optimization, if the pre-scan optimization is on) |
+| `scan_n_steps` | 36 | Number of steps. The number of points computed is this plus 1 |
+| `scan_step_size` | 10 | Step size (Å or degrees). Negative to go the other way |
+| `opt_before_scan` | On | Optimizes the input structure without constraints before the scan |
+| `opt_after_scan` | On | Optimizes without constraints after the scan, starting from the first minimum found going back from the last point |
+| Convergence | normal (0.02) | Same choices as ColabUMA Opt; only the default differs |
 
-「後の最適化」は、行き過ぎたスキャンの端から戻って極小を取るためのものです。0.1 kcal/mol 未満の小さな凹凸と未収束の点は無視します。スキャンの端でもエネルギーが下がり続けている場合や、最初の点まで戻った場合は注意を表示します。
+The optimization after the scan comes back from a scan that overshot and finds the minimum. Bumps smaller than 0.1 kcal/mol and unconverged points are ignored. A note is shown if the energy still decreases at the end of the scan, or if it goes all the way back to the first point.
 
-原子番号が分からないときは、一度実行すると「5. 構造の準備」に番号付きの3D表示が出ます。
+If you don't know the atom numbers, run once: "5. 構造の準備" (structure preparation) shows a numbered 3D view.
 
-| ファイル | 内容 |
+| File | Contents |
 |---|---|
-| `<出力名>_scan.csv` | 各点の目標値、実測値、エネルギー、ΔE、fmax、ステップ数、収束（未収束の点も載せます） |
-| `<出力名>_scan.xyz` | 収束した各点の最適化構造（複数構造xyz） |
-| `<出力名>_scan.log` | 収束した各点の最終構造だけを Gaussian のスキャン出力の書式で書いたもの |
-| `<出力名>_preopt.xyz` / `.log` | 前の最適化の結果と経路（オンのとき） |
-| `<出力名>_postopt.xyz` / `.log` | 後の最適化の結果と経路（オンのとき） |
-| `<出力名>_log.txt` | 入力条件、ソフトのバージョン、各点と各ステップのエネルギーと fmax |
+| `<output name>_scan.csv` | Target value, measured value, energy, ΔE, fmax, steps and convergence of each point (unconverged points included) |
+| `<output name>_scan.xyz` | Optimized structure of each converged point (multi-structure xyz) |
+| `<output name>_scan.log` | Final structure of each converged point, in the format of Gaussian's scan output |
+| `<output name>_preopt.xyz` / `.log` | Result and path of the optimization before the scan (when on) |
+| `<output name>_postopt.xyz` / `.log` | Result and path of the optimization after the scan (when on) |
+| `<output name>_log.txt` | Input settings, software versions, energy and fmax of each point and step |
 
 ## ColabUMA TS
 
-[ColabUMA_TS.ipynb](ColabUMA_TS.ipynb) は、反応の遷移状態（TS）を探すノートです。
+[ColabUMA_TS.ipynb](ColabUMA_TS.ipynb) searches for the transition state (TS) of a reaction.
 
-1. **DMF**（Direct MaxFlux 法、[PyDMF](https://github.com/shin1koda/dmf)）で、反応物と生成物をつなぐ反応経路を最適化し、経路上の最高点を TS の初期構造にする（初期経路は FB-ENM で作る）
-2. **Sella** で1次の鞍点に最適化する。最初のヘシアンは UMA の数値微分
-3. 振動計算で虚振動が1本だけか確かめ、虚振動の向きに少しずらして両側に最適化し、反応物・生成物と結合のつながりが同じ構造に落ちるかを確かめる（簡易IRC）
-4. **DFT の一点計算**（[GPU4PySCF](https://github.com/pyscf/gpu4pyscf)、密度フィッティング）で、UMA の構造のまま反応物・TS・生成物のエネルギーを計算し、UMA と DFT の活性化エネルギーを並べる
+1. **DMF** (direct MaxFlux method, [PyDMF](https://github.com/shin1koda/dmf)) optimizes the reaction path between the reactant and the product, and the highest point on the path becomes the TS guess (the initial path is made with FB-ENM)
+2. **Sella** optimizes it to a first-order saddle point. The initial Hessian is a numerical derivative of UMA
+3. Vibrational analysis checks that there is exactly one imaginary frequency. The TS is displaced slightly along the imaginary mode in both directions and optimized, to check that it falls to structures with the same bonding as the reactant and the product (simple IRC check)
+4. **DFT single points** ([GPU4PySCF](https://github.com/pyscf/gpu4pyscf), density fitting) of the reactant, TS and product at the UMA structures, and the UMA and DFT activation energies side by side
 
-反応物と生成物は、**同じ原子が同じ順番で並んだ** 2つのファイル（xyz または gjf）で入れます。スキャンの `preopt.xyz` と `postopt.xyz` はそのまま使えます。TS の初期構造が手元にあるときは、「TSの初期構造（Sellaのみ）」を選ぶと DMF を飛ばします。
+Give the reactant and the product as two files (xyz or gjf) with **the same atoms in the same order**. The `preopt.xyz` and `postopt.xyz` from a scan work as they are. If you already have a TS guess, choose "TSの初期構造（Sellaのみ）" (TS guess, Sella only) to skip DMF.
 
-| 項目 | 既定値 | 説明 |
+| Item | Default | Description |
 |---|---|---|
-| `ts_input` | 反応物と生成物 | 「反応物と生成物（DMF → Sella）」か「TSの初期構造（Sellaのみ）」 |
-| `opt_endpoints` | オン | DMF の前に反応物と生成物を最適化する |
-| `dmf_nmove` | 5 | 経路の途中でエネルギーを計算する点の数 |
-| `dmf_convergence` | middle | DMF の収束判定（loose / middle / tight） |
-| `dmf_max_iter` | 300 | DMF の最大反復回数 |
-| `ts_exact_hessian` | オン | Sella の最初のヘシアンを数値微分で作る（力の計算 6N 回） |
-| `check_connection` | オン | 簡易IRC |
-| `run_dft` | オン | DFT の一点計算 |
-| `dft_functional` / `dft_basis` | B3LYP-D3(BJ) / def2-SVP | 既定は計算の速さを優先。ωB97M-V/def2-TZVPD が UMA（OMol25）の学習データと同じ計算レベルだが、T4 では時間がかかる |
-| `gaussian_route` | `# opt=(ts,calcfc,noeigentest) freq b3lyp/def2svp empiricaldispersion=gd3bj` | ZIP に入れる Gaussian 用 gjf のルート行 |
+| `ts_input` | Reactant and product | "反応物と生成物（DMF → Sella）" (reactant and product) or "TSの初期構造（Sellaのみ）" (TS guess) |
+| `opt_endpoints` | On | Optimizes the reactant and the product before DMF |
+| `dmf_nmove` | 5 | Number of points on the path where the energy is computed |
+| `dmf_convergence` | middle | DMF convergence (loose / middle / tight) |
+| `dmf_max_iter` | 300 | Maximum DMF iterations |
+| `ts_exact_hessian` | On | Builds Sella's initial Hessian by numerical differentiation (6N force calls) |
+| `check_connection` | On | Simple IRC check |
+| `run_dft` | On | DFT single points |
+| `dft_functional` / `dft_basis` | B3LYP-D3(BJ) / def2-SVP | The default favors speed. ωB97M-V/def2-TZVPD is the level of theory of UMA's training data (OMol25), but it is slow on a T4 |
+| `dft_time_limit` | 60 | Time limit for DFT (minutes, total of reactant, TS and product). 0 means no limit |
+| `gaussian_route` | `# opt=(ts,calcfc,noeigentest) freq b3lyp/def2svp empiricaldispersion=gd3bj` | Route line of the Gaussian gjf in the ZIP |
 
-| ファイル | 内容 |
+| File | Contents |
 |---|---|
-| `<出力名>_ts.xyz` / `_ts.gjf` | TS の構造と、Gaussian で DFT の TS 最適化をするための入力 |
-| `<出力名>_ts_opt.log` | Sella の最適化経路（Gaussian の opt=ts の書式） |
-| `<出力名>_ts_freq.log` / `.txt` | TS の振動数と基準振動（GaussView で虚振動のアニメーションが見られる） |
-| `<出力名>_dmf_path.xyz` / `.log` / `.csv` | DMF の反応経路とエネルギー（GaussView で開くと経路のアニメーション） |
-| `<出力名>_dmf_init.xyz`、`_ts_guess.xyz` | FB-ENM の初期経路、DMF の最高点 |
-| `<出力名>_reactant.xyz` / `_product.xyz` | 端点（最適化したときは `_opt.log` も） |
-| `<出力名>_irc_minus.xyz` / `_irc_plus.xyz` | 簡易IRCで落ちた構造 |
-| `<出力名>_dft.csv` | DFT 一点計算のエネルギー |
+| `<output name>_ts.xyz` / `_ts.gjf` | TS structure, and a Gaussian input for a DFT TS optimization |
+| `<output name>_ts_opt.log` | Sella optimization path (format of Gaussian's opt=ts) |
+| `<output name>_ts_freq.log` / `.txt` | Frequencies and normal modes of the TS (GaussView animates the imaginary mode) |
+| `<output name>_dmf_path.xyz` / `.log` / `.csv` | DMF reaction path and energies (GaussView shows the path animation) |
+| `<output name>_dmf_init.xyz`, `_ts_guess.xyz` | FB-ENM initial path, highest point of DMF |
+| `<output name>_reactant.xyz` / `_product.xyz` | End points (with `_opt.log` when they were optimized) |
+| `<output name>_irc_minus.xyz` / `_irc_plus.xyz` | Structures reached by the simple IRC check |
+| `<output name>_dft.csv` | DFT single point energies |
 
-見つかる TS は UMA のポテンシャル面の TS です。DFT の一点計算は UMA の構造のままなので、最終的には gjf などで DFT の TS 最適化と IRC を行ってください。初回は DMF に必要な IPOPT（cyipopt）をビルドするため、インストールに数分余分にかかります。
+The TS found is a TS on the UMA potential energy surface. The DFT single points use the UMA structures, so finally run a DFT TS optimization and IRC (for example with the gjf). On the first run, the install takes a few minutes longer because IPOPT (cyipopt), needed by DMF, is built.
 
 ## ColabUMA Workflow
 
-Colab ではノートごとに別のセッション（別のマシン）が割り当てられるため、ColabUMA_Opt → ColabUMA_Scan → ColabUMA_TS と別々のノートで続けると、そのたびにインストールとモデルのダウンロードをやり直すことになります。
+Colab gives each notebook its own session (its own machine). If you go ColabUMA_Opt → ColabUMA_Scan → ColabUMA_TS in separate notebooks, you redo the install and the model download each time.
 
-[ColabUMA_Workflow.ipynb](ColabUMA_Workflow.ipynb) は、1つのセッションのまま **構造最適化 → スキャン → 遷移状態 → DFT一点計算** を続けて実行するノートです。前の段階の構造はメモリ上でそのまま次に渡します。
+[ColabUMA_Workflow.ipynb](ColabUMA_Workflow.ipynb) runs **optimization → scan → transition state → DFT single points** in a single session. Each stage passes its structures to the next in memory.
 
-- 最適化した構造を反応物、スキャン後の最適化構造を生成物として DMF に渡す（`ts_source` を「スキャンの最高点から Sella」にすると、DMF を飛ばしてスキャンの最高点から始める）
-- 途中の段階だけやり直したいときは、フォームを直してそのセルから下を実行する（**ランタイム → 以降のセルを実行**）。インストールとモデル読み込みはスキップされる
-- 結果は全段階を1つの ZIP にまとめる
-- 遷移状態の段階の後に、スキャンのエネルギー曲線に DMF の経路・TS の初期構造・Sella の TS・生成物を重ねた図を出す。横軸はそれぞれの構造でスキャンした座標を測った値
-- DFT の一点計算は既定でオフ（`run_dft` をオンにすると計算する）
-- ZIP には Gaussian 用の TS の gjf（`_ts.gjf`、ルート行は `gaussian_route`）と IRC の gjf（`_irc.gjf`、ルート行は `gaussian_irc_route`）が入る。どちらも構造は UMA の TS
+- The optimized structure becomes the reactant and the structure optimized after the scan becomes the product for DMF (set `ts_source` to "スキャンの最高点から Sella" (Sella from the highest scan point) to skip DMF and start from the highest point of the scan)
+- To redo only part of the run, edit the form and run from that cell down (**Runtime → Run after**). The install and the model load are skipped
+- All stages go into a single ZIP
+- After the transition state stage, a plot overlays the DMF path, TS guess, Sella TS and product on the scan's energy curve. The x axis is the scanned coordinate measured in each structure
+- DFT single points are off by default (turn on `run_dft`). The time limit `dft_time_limit` works as in the TS notebook
+- The ZIP contains Gaussian gjf files for the TS (`_ts.gjf`, route line `gaussian_route`) and the IRC (`_irc.gjf`, route line `gaussian_irc_route`). Both use the UMA TS structure
 
 ## ColabDFT SPE
 
-[ColabDFT_SPE.ipynb](ColabDFT_SPE.ipynb) は、入力した構造のまま GPU4PySCF で DFT の一点計算だけを行うノートです。構造の最適化はしません。UMA を使わないので、[事前準備](#事前準備初回のみ)の Hugging Face のトークンはいりません。fairchem もインストールしません。
+[ColabDFT_SPE.ipynb](ColabDFT_SPE.ipynb) runs only a DFT single point with GPU4PySCF, on the input structure as it is. It does not optimize the structure. It does not use UMA, so you don't need the Hugging Face token from [Before you start](#before-you-start-first-time-only), and fairchem is not installed.
 
-| 項目 | 既定値 | 説明 |
+| Item | Default | Description |
 |---|---|---|
-| 電荷 / スピン多重度 | 0 / 1 | gjf に書かれた値ではなくフォームの値を使う。多重度1は RKS、それ以外は UKS |
-| 汎関数 | B3LYP-D3(BJ) | ωB97M-V / B3LYP-D3(BJ) / PBE0-D3(BJ) / M06-2X / r2SCAN-D4 |
-| 基底関数 | def2-SVP | def2-SVP / def2-TZVP / def2-TZVPD |
+| Charge / spin multiplicity | 0 / 1 | Taken from the form, not from the gjf. Multiplicity 1 uses RKS, others UKS |
+| Functional | B3LYP-D3(BJ) | ωB97M-V / B3LYP-D3(BJ) / PBE0-D3(BJ) / M06-2X / r2SCAN-D4 |
+| Basis set | def2-SVP | def2-SVP / def2-TZVP / def2-TZVPD |
 
-xyz に複数の構造が入っている場合は先頭だけを計算します。扱える元素は H〜Rn（原子番号1〜86）です。
+If an xyz holds several structures, only the first is computed. Supported elements are H–Rn (atomic numbers 1–86).
 
-| ファイル | 内容 |
+| File | Contents |
 |---|---|
-| `<出力名>_spe.xyz` | 計算した構造。コメント行にエネルギーと計算条件 |
-| `<出力名>_dft.csv` | DFT 一点計算のエネルギー |
-| `<出力名>_log.txt` | 入力条件、ソフトのバージョン、計算結果 |
+| `<output name>_spe.xyz` | The computed structure. Energy and settings in the comment line |
+| `<output name>_dft.csv` | DFT single point energy |
+| `<output name>_log.txt` | Input settings, software versions, results |
 
 ## ColabDFT ESP
 
-[ColabDFT_ESP.ipynb](ColabDFT_ESP.ipynb) は、入力した構造のまま DFT の一点計算を行い、静電ポテンシャル（ESP）を等密度面に色付けして 3D 表示するノートです。赤が負、青が正です。構造の最適化はせず、UMA もトークンもいりません。電荷、多重度、汎関数、基底関数の項目は [ColabDFT SPE](#colabdft-spe) と同じです。
+[ColabDFT_ESP.ipynb](ColabDFT_ESP.ipynb) runs a DFT single point on the input structure as it is, and shows the electrostatic potential (ESP) colored on an electron density isosurface in 3D. Red is negative, blue is positive. It does not optimize the structure, and needs neither UMA nor a token. The charge, multiplicity, functional and basis set items are the same as in [ColabDFT SPE](#colabdft-spe).
 
-| 項目 | 既定値 | 説明 |
+| Item | Default | Description |
 |---|---|---|
-| `isosurface` | 0.002 | 色を付ける等密度面の値（e/Bohr³） |
-| `grid_quality` | 標準 | 格子の間隔。粗い 0.5 / 標準 0.35 / 細かい 0.25 Bohr。分子が大きいときは自動で粗くする |
-| `esp_color_range` | 0 | 色の範囲 ±（kcal/mol）。0 なら自動。分子どうしを比べるときは同じ値にする |
+| `isosurface` | 0.002 | Density of the isosurface that is colored (e/Bohr³) |
+| `grid_quality` | 標準 (standard) | Grid spacing. 粗い (coarse) 0.5 / 標準 (standard) 0.35 / 細かい (fine) 0.25 Bohr. Made coarser automatically for large molecules |
+| `esp_color_range` | 0 | Color range ± (kcal/mol). 0 means automatic. Use the same value when comparing molecules |
 
-| ファイル | 内容 |
+| File | Contents |
 |---|---|
-| `<出力名>_esp.cube` | 格子上の ESP（a.u.） |
-| `<出力名>_density.cube` | 格子上の電子密度（e/Bohr³）。GaussView では、これの等値面に `_esp.cube` を色付けする |
-| `<出力名>_spe.xyz` | 計算した構造。コメント行にエネルギーと計算条件 |
-| `<出力名>_dft.csv` | DFT 一点計算のエネルギー |
-| `<出力名>_log.txt` | 入力条件、ソフトのバージョン、計算結果、面の上の ESP の最小・最大 |
+| `<output name>_esp.cube` | ESP on the grid (a.u.) |
+| `<output name>_density.cube` | Electron density on the grid (e/Bohr³). In GaussView, color an isosurface of this with `_esp.cube` |
+| `<output name>_spe.xyz` | The computed structure. Energy and settings in the comment line |
+| `<output name>_dft.csv` | DFT single point energy |
+| `<output name>_log.txt` | Input settings, software versions, results, minimum and maximum ESP on the surface |
 
-## コードの構成
+## DFT memory and time
 
-ノートのセルはフォームの値を受け取って関数を呼ぶだけにして、計算の中身はリポジトリの [`colabuma/`](colabuma) パッケージにまとめています。各ノートは「2. ファイル選択と事前確認」でこのリポジトリを Colab に取ってきて（`git clone`）読み込みます。ノートを足しても共通部分は増えず、直すときも1か所で済みます。
+In the UMA notebooks (ColabUMA Opt, TS and Workflow), if the DFT single points fail, **only DFT is skipped and the notebook goes on to save the UMA results**. The reason is shown as a note and written to `log.txt`. Energies of the structures that finished before the failure are kept in `dft.csv`.
 
-| モジュール | 内容 |
+DFT is skipped when:
+
+- **Memory is expected to run out.** Before starting, the notebook estimates the size of the three-center integrals for density fitting. gpu4pyscf keeps them in GPU memory, or in CPU memory if they do not fit. If CPU memory also runs out, Colab does not raise an error: the runtime crashes and the UMA results are lost too. When that looks likely, DFT is skipped without starting
+- **Memory runs out during the calculation** (for example a GPU out-of-memory error)
+- **The time limit is exceeded.** When "DFT の時間の上限" (DFT time limit, default 60 min, total over all structures) has passed, the calculation stops, even in the middle of an SCF. If the next structure would take as long as the previous one and cannot finish in time, it is not started
+- **The Colab runtime is about to end.** A free Colab runtime lasts at most about 12 hours. DFT that would not finish 15 minutes before 12 hours from the start of the runtime is stopped (even with the limit set to 0)
+- Any other error occurs in the DFT calculation
+
+**Memory warnings:** when memory looks tight, a note is shown in the structure preparation cell (before the UMA calculations start) and in the DFT cell. The size of the three-center integrals is an upper bound; it is often smaller in practice because small integrals are screened out. As a guide, on a T4 (15 GB GPU, about 12 GB CPU memory), for a molecule of about 80 atoms, def2-SVP fits in GPU memory, while def2-TZVP and larger are expected to exceed CPU memory too, so DFT is skipped.
+
+ColabDFT SPE and ESP exist to run DFT, so they do not skip it. They only show a note when memory looks tight.
+
+About Colab timeouts:
+
+- A free runtime lasts at most about 12 hours (longer with Colab Pro)
+- If you don't interact with the browser for a long time, the runtime can disconnect even while a calculation runs. Keep the tab open during long calculations
+- When the runtime ends, all results on the Colab machine are lost. Download the ZIP after each run
+
+## Code layout
+
+Notebook cells only take the form values and call functions. The calculations live in the [`colabuma/`](colabuma) package of this repository. In "2. ファイル選択と事前確認" (file selection and checks), each notebook fetches this repository into Colab (`git clone`) and imports it. Adding a notebook does not duplicate the shared code, and a fix goes in one place.
+
+| Module | Contents |
 |---|---|
-| `env.py` | GPU とトークンの確認、インストール、Hugging Face の認証、モデル読み込み（同じセッションでは1回だけ） |
-| `structure.py` | アップロード、xyz・gjf の読み込み、電荷・多重度の確認、3D表示 |
-| `opt.py` | 最適化とプログレスバー、振動解析（数値ヘシアン）、Opt ノートの結果表示 |
-| `scan.py` | 緩和スキャン |
-| `ts.py` | DMF、Sella、TS の確認、簡易IRC |
-| `dft.py` | DFT の一点計算（gpu4pyscf、使えなければ CPU の PySCF） |
-| `esp.py` | 格子上の電子密度と ESP、cube の書き出し、等密度面の表示 |
-| `gaussian.py` | Gaussian の log（opt / scan / freq / 経路）と gjf の書き出し |
-| `output.py` | log.txt と ZIP |
+| `env.py` | GPU and token checks, install, Hugging Face login, model load (once per session) |
+| `structure.py` | Upload, reading xyz and gjf, charge and multiplicity checks, 3D view |
+| `opt.py` | Optimization and progress bars, vibrational analysis (numerical Hessian), results of the Opt notebook |
+| `scan.py` | Relaxed scan |
+| `ts.py` | DMF, Sella, TS checks, simple IRC check |
+| `dft.py` | DFT single points (gpu4pyscf, or CPU PySCF if the GPU is unavailable), memory estimate, time limit |
+| `esp.py` | Electron density and ESP on a grid, cube output, isosurface view |
+| `gaussian.py` | Writing Gaussian logs (opt / scan / freq / path) and gjf files |
+| `output.py` | log.txt and the ZIP |
 
-別のブランチのコードで試すときは、「2.」のセルの `COLABUMA_REF` をそのブランチ名にしてください（すでに取ってきたあとなら、セッションを再起動してから）。リポジトリを手元に clone してノートを開いた場合は、そのフォルダの `colabuma` を使います。
+To try code from another branch, set `COLABUMA_REF` in cell "2." to that branch name (restart the session if the code was already fetched). If you clone the repository locally and open a notebook from it, the `colabuma` in that folder is used.
 
-## 注意事項
+## Notes
 
-- 最適化は鞍点に収束することがあります。重要な構造は振動計算で確認してください。
-- UMAは機械学習ポテンシャルであり、DFTの代わりにはなりません。最終的なエネルギー比較はDFTで確認してください。
-- 小さな分子（数十原子以下）では、DFTを直接使う方が確実な場面が多くあります。
-- 扱える元素は H〜Bi（原子番号1〜83）です。
-- `_opt.log` は表示用に Gaussian の書式をまねたファイルで、Gaussian で計算した結果ではありません。エネルギー（Hartree）と力は UMA の値です。収束判定の閾値欄には、フォームの fmax を Hartree/Bohr に換算した値を、Gaussian の既定値と同じ比率で書いています。
-- 振動計算は UMA の力の中心差分（0.01 Å）でヘシアンを作り、並進・回転を射影で取り除いてから対角化します。絶対値が 20 cm⁻¹ 未満の虚振動は数値誤差として本数に数えません（`freq.txt` には射影前の値も載ります）。
+- An optimization can converge to a saddle point. Check important structures with a vibrational analysis.
+- UMA is a machine learning potential and does not replace DFT. Confirm final energy comparisons with DFT.
+- For small molecules (up to a few tens of atoms), using DFT directly is often more reliable.
+- Supported elements are H–Bi (atomic numbers 1–83).
+- `_opt.log` imitates Gaussian's format for viewing; it is not a Gaussian result. Energies (Hartree) and forces are UMA values. The threshold column holds the form's fmax converted to Hartree/Bohr, with the same ratios as Gaussian's defaults.
+- The vibrational analysis builds the Hessian from central differences of UMA forces (0.01 Å), projects out translations and rotations, and diagonalizes. Imaginary frequencies with an absolute value under 20 cm⁻¹ are treated as numerical noise and not counted (`freq.txt` also lists the values before projection).
 
-## 引用
+## Citation
 
-論文で使う場合は、ColabChem に加えて、使った手法の文献も引用してください。ColabChem の引用情報は [CITATION.cff](CITATION.cff) にあり、GitHub のリポジトリページ右側の「Cite this repository」から APA や BibTeX の形式でコピーできます。
+If you use ColabChem in a publication, please cite ColabChem together with the methods you used. The citation information for ColabChem is in [CITATION.cff](CITATION.cff); you can copy it in APA or BibTeX format from "Cite this repository" on the right side of the GitHub repository page.
 
 - R. Chiba, ColabChem, https://github.com/RChibaChiba/ColabChem
-- A. H. Larsen *et al.*, *J. Phys.: Condens. Matter* **29**, 273002 (2017).（ASE。すべてのノートで使います）
+- A. H. Larsen *et al.*, *J. Phys.: Condens. Matter* **29**, 273002 (2017). (ASE, used by all notebooks)
 
-UMA を使うノート（ColabUMA）では、次も引用してください（ColabDFT では UMA を使わないので不要です）。
+For the notebooks that use UMA (ColabUMA), also cite (not needed for ColabDFT, which does not use UMA):
 
 - B. M. Wood *et al.*, "UMA: A Family of Universal Models for Atoms", arXiv:2506.23971 (2025).
 - D. S. Levine *et al.*, "The Open Molecules 2025 (OMol25) Dataset, Evaluations, and Models", arXiv:2505.08762 (2025).
 - fairchem: https://github.com/facebookresearch/fairchem
 
-ColabUMA TS で遷移状態探索を使った場合は、次も引用してください。
+If you used the transition state search of ColabUMA TS, also cite:
 
-- S.-i. Koda and S. Saito, *J. Open Source Softw.* **11**, 10379 (2026).（PyDMF）
-- S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 2798–2811 (2024).（Direct MaxFlux）
-- S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 7176–7187 (2024); **21**, 3513–3522 (2025).（FB-ENM、CFB-ENM）
-- E. D. Hermes, K. Sargsyan, H. N. Najm, J. Zádor, *J. Chem. Theory Comput.* **18**, 6974–6988 (2022).（Sella）
+- S.-i. Koda and S. Saito, *J. Open Source Softw.* **11**, 10379 (2026). (PyDMF)
+- S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 2798–2811 (2024). (Direct MaxFlux)
+- S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 7176–7187 (2024); **21**, 3513–3522 (2025). (FB-ENM, CFB-ENM)
+- E. D. Hermes, K. Sargsyan, H. N. Najm, J. Zádor, *J. Chem. Theory Comput.* **18**, 6974–6988 (2022). (Sella)
 
-DFT の一点計算（ColabUMA Opt、TS、Workflow、ColabDFT）を使った場合は、次も引用してください。
+If you used DFT single points (ColabUMA Opt, TS, Workflow, ColabDFT), also cite:
 
-- PySCF（Q. Sun *et al.*, *J. Chem. Phys.* **153**, 024109 (2020)）
-- GPU4PySCF（X. Wu *et al.*, arXiv:2404.09452 (2024)）
+- PySCF (Q. Sun *et al.*, *J. Chem. Phys.* **153**, 024109 (2020))
+- GPU4PySCF (X. Wu *et al.*, arXiv:2404.09452 (2024))
 
-ColabChem の開発には AI コーディング支援（Claude Code）を使いました。
+ColabChem was developed with AI coding assistance (Claude Code).
 
-## ライセンス
+## License
 
-- ノートと共通コード（`colabuma/`）：[MIT License](LICENSE)
-- UMAのモデル重み：[FAIR Chemistry License v1](https://huggingface.co/facebook/UMA) に従います。重みはこのリポジトリには含まれず、Hugging Face で各自がライセンスに同意してからダウンロードします
+- Notebooks and shared code (`colabuma/`): [MIT License](LICENSE)
+- UMA model weights: under the [FAIR Chemistry License v1](https://huggingface.co/facebook/UMA). The weights are not included in this repository; each user downloads them from Hugging Face after accepting the license
 
-### 実行時にインストールするソフトウェア
+### Software installed at runtime
 
-このリポジトリには下のソフトウェアを含めていません。ノートを実行したときに PyPI または Ubuntu のパッケージ（apt）から Colab のセッションにインストールし、それぞれのライセンスに従って使います。
+This repository does not include the software below. When a notebook runs, it is installed into the Colab session from PyPI or Ubuntu packages (apt), and used under its own license.
 
-| ソフトウェア | 使うノート | ライセンス |
+| Software | Notebooks | License |
 |---|---|---|
-| [fairchem-core](https://github.com/facebookresearch/fairchem) | ColabDFT 以外 | MIT |
-| [ASE](https://gitlab.com/ase/ase) | すべて | LGPL-2.1-or-later |
-| [py3Dmol](https://github.com/3dmol/3Dmol.js) | すべて | MIT |
-| [PyDMF](https://github.com/shin1koda/dmf)（`pydmf`） | TS、Workflow | MIT |
-| [Sella](https://github.com/zadorlab/sella) | TS、Workflow | LGPL-3.0 |
-| [cyipopt](https://github.com/mechmotum/cyipopt) | TS、Workflow | EPL-2.0 |
-| [Ipopt](https://github.com/coin-or/Ipopt)（apt の `coinor-libipopt-dev`、3.11 系） | TS、Workflow | CPL-1.0（3.13 以降は EPL-2.0） |
-| MUMPS（Ipopt が使う線形ソルバー。apt で一緒に入る） | TS、Workflow | CeCILL-C |
-| [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)（`gpu4pyscf-cuda12x`、`gpu4pyscf-libxc-cuda12x`） | Opt、TS、Workflow（DFT）、ColabDFT | Apache-2.0 |
-| [CuPy](https://cupy.dev/)（`cupy-cuda12x`） | Opt、TS、Workflow（DFT）、ColabDFT | MIT |
-| [cuTENSOR](https://developer.nvidia.com/cutensor)（`cutensor-cu12`） | Opt、TS、Workflow（DFT）、ColabDFT | NVIDIA のプロプライエタリライセンス |
-| [PySCF](https://github.com/pyscf/pyscf) | Opt、TS、Workflow（DFT）、ColabDFT | Apache-2.0 |
-| [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt、TS、Workflow（DFT）、ColabDFT | Apache-2.0 |
+| [fairchem-core](https://github.com/facebookresearch/fairchem) | All but ColabDFT | MIT |
+| [ASE](https://gitlab.com/ase/ase) | All | LGPL-2.1-or-later |
+| [py3Dmol](https://github.com/3dmol/3Dmol.js) | All | MIT |
+| [PyDMF](https://github.com/shin1koda/dmf) (`pydmf`) | TS, Workflow | MIT |
+| [Sella](https://github.com/zadorlab/sella) | TS, Workflow | LGPL-3.0 |
+| [cyipopt](https://github.com/mechmotum/cyipopt) | TS, Workflow | EPL-2.0 |
+| [Ipopt](https://github.com/coin-or/Ipopt) (apt `coinor-libipopt-dev`, 3.11 series) | TS, Workflow | CPL-1.0 (EPL-2.0 from 3.13) |
+| MUMPS (linear solver used by Ipopt, installed with it by apt) | TS, Workflow | CeCILL-C |
+| [GPU4PySCF](https://github.com/pyscf/gpu4pyscf) (`gpu4pyscf-cuda12x`, `gpu4pyscf-libxc-cuda12x`) | Opt, TS, Workflow (DFT), ColabDFT | Apache-2.0 |
+| [CuPy](https://cupy.dev/) (`cupy-cuda12x`) | Opt, TS, Workflow (DFT), ColabDFT | MIT |
+| [cuTENSOR](https://developer.nvidia.com/cutensor) (`cutensor-cu12`) | Opt, TS, Workflow (DFT), ColabDFT | NVIDIA proprietary license |
+| [PySCF](https://github.com/pyscf/pyscf) | Opt, TS, Workflow (DFT), ColabDFT | Apache-2.0 |
+| [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt, TS, Workflow (DFT), ColabDFT | Apache-2.0 |
 
-ここに書いたライセンスは、2026年11月時点で各パッケージの配布元（PyPI と Ubuntu のパッケージ）に書かれているものです。ほかにも、これらが依存するライブラリ（PyTorch、NumPy、SciPy など）が一緒にインストールされます。正確な条件は、それぞれの配布元で確認してください。
+These licenses are as stated by each package's distribution (PyPI and Ubuntu packages) as of November 2026. Libraries they depend on (PyTorch, NumPy, SciPy, etc.) are installed as well. Check each distribution for the exact terms.
 
-## 公開する前に
+## Before publishing
 
-ノートを更新してコミットする前に、**編集 → すべての出力をクリア** してから保存し、出力セルやトークンが残っていないことを確認してください。
+Before committing an updated notebook, choose **Edit → Clear all outputs**, save, and make sure no output cells or tokens remain.
