@@ -58,13 +58,20 @@ references:
     start: 273002
     year: 2017
     doi: 10.1088/1361-648X/aa680e
-  - type: software
-    title: PyDMF
+  - type: article
+    title: >-
+      PyDMF: A Python package for variational double-ended reaction-path
+      and transition-state optimization
     authors:
       - family-names: Koda
         given-names: Shin-ichi
       - family-names: Saito
         given-names: Shinji
+    journal: Journal of Open Source Software
+    volume: 11
+    start: 10379
+    year: 2026
+    doi: 10.21105/joss.10379
     repository-code: "https://github.com/shin1koda/dmf"
   - type: article
     title: >-
@@ -96,6 +103,21 @@ references:
     end: 7187
     year: 2024
     doi: 10.1021/acs.jctc.4c00792
+  - type: article
+    title: >-
+      Correlated Flat-Bottom Elastic Network Model for Improved Bond
+      Rearrangement in Reaction Paths
+    authors:
+      - family-names: Koda
+        given-names: Shin-ichi
+      - family-names: Saito
+        given-names: Shinji
+    journal: Journal of Chemical Theory and Computation
+    volume: 21
+    start: 3513
+    end: 3522
+    year: 2025
+    doi: 10.1021/acs.jctc.4c01549
   - type: article
     title: >-
       Sella, an Open-Source Automation-Friendly Molecular Saddle Point
