@@ -8,7 +8,8 @@ import numpy as np
 from .ui import ColabUMAError, warn
 
 GJF_EXTENSIONS = (".gjf", ".com", ".gjc")
-INPUT_MODES = ("ファイル", "描く")
+INPUT_MODES = ("file", "draw")
+INPUT_ALIASES = {"ファイル": "file", "描く": "draw"}  # 以前のフォームの日本語の値
 DRAWN_NAME = "drawn.mol"  # 描いた構造は、この名前の molfile として読み込みに渡す
 JSME_URL = "https://cdn.jsdelivr.net/npm/jsme-editor@2024.4.29/jsme.nocache.js"
 N_CONFORMERS = 10  # 描いた構造から作る配座の数。MMFF のエネルギーが一番低いものを使う
@@ -18,33 +19,41 @@ _uploads = {}  # 前回アップロードしたファイル（Cancel upload で�
 
 
 # --- アップロード ---
-def upload(key="input", what="xyz または gjf（.gjf / .com）ファイル"):
+def upload(key="input", what="an xyz or gjf (.gjf / .com) file"):
     """ファイルを1つ選ばせて (名前, 中身) を返す。Cancel upload なら前回のファイルを使う。"""
     from google.colab import files
 
     previous = _uploads.get(key)
-    print(f"{what}を選んでください。")
+    print(f"Choose {what}.")
     if previous:
-        print(f"前回の「{previous[0]}」をそのまま使うときは Cancel upload を押してください。")
+        print(f"To use the previous file \"{previous[0]}\" again, press Cancel upload.")
     uploaded = files.upload()
     if uploaded:
         if len(uploaded) > 1:
-            warn("複数のファイルが選ばれたため、最初の1つだけを使います。")
+            warn("Several files were chosen. Only the first one is used.")
         _uploads[key] = next(iter(uploaded.items()))
     elif previous:
-        print(f"前回のファイル「{previous[0]}」を使います。")
+        print(f"Using the previous file \"{previous[0]}\".")
     else:
-        raise ColabUMAError("ファイルがアップロードされませんでした。", f"もう一度すべて実行して、{what}を選んでください。")
+        raise ColabUMAError("No file was uploaded.", f"Run all again and choose {what}.",
+                            ja="ファイルがアップロードされませんでした。", ja_hint="もう一度すべて実行して、ファイルを選んでください。")
     return _uploads[key]
 
 
 def get_input(mode):
     """フォームの「入力」に合わせて、ファイルを選ばせるか構造を描かせる。(名前, 中身) を返す。"""
-    if mode == "ファイル":
+    key = INPUT_ALIASES.get(mode.strip(), mode.strip())
+    if key == "file":
         return upload()
-    if mode == "描く":
+    if key == "draw":
         return draw()
-    raise ColabUMAError(f"入力「{mode}」には対応していません。", f"{', '.join(INPUT_MODES)} から選んでください。")
+    raise ColabUMAError(f"The input \"{mode}\" is not supported.", f"Choose one of {', '.join(INPUT_MODES)}.",
+                        ja=f"入力「{mode}」には対応していません。", ja_hint=f"{', '.join(INPUT_MODES)} から選んでください。")
+
+
+def is_drawing(mode):
+    """フォームの入力が「描く」か（以前の日本語の値も受け付ける）。"""
+    return INPUT_ALIASES.get(mode.strip(), mode.strip()) == "draw"
 
 
 def draw(key="draw"):
@@ -56,18 +65,20 @@ def draw(key="draw"):
     try:
         from google.colab import output
     except ImportError:
-        raise ColabUMAError("構造を描く入力は Google Colab でだけ使えます。", "入力を「ファイル」にしてください。") from None
+        raise ColabUMAError("The drawing input only works on Google Colab.", "Set the input to file.",
+                            ja="構造を描く入力は Google Colab でだけ使えます。", ja_hint="入力を「file」にしてください。") from None
     previous = _uploads.get(key)
     with open(os.path.join(os.path.dirname(__file__), "draw.html"), encoding="utf-8") as f:
         page = f.read()
     page = page.replace("__JSME_URL__", JSME_URL).replace(
         "__PREVIOUS__", json.dumps(previous[1].decode() if previous else "").replace("</", "<\\/"))
-    print("構造を描いて「この構造で計算」を押してください。水素は描かなくても自動で付けます。")
+    print("Draw the structure and press \"Use this structure\". Hydrogens are added automatically.")
     display(HTML(page))
     molfile = output.eval_js("new Promise((resolve) => { const wait = () => window.colabchemDrawn"
                              " ? window.colabchemDrawn.then(resolve) : setTimeout(wait, 100); wait(); })")
     if not molfile or not molfile.strip():
-        raise ColabUMAError("構造が描かれていません。", "もう一度すべて実行して、構造を描いてください。")
+        raise ColabUMAError("No structure was drawn.", "Run all again and draw the structure.",
+                            ja="構造が描かれていません。", ja_hint="もう一度すべて実行して、構造を描いてください。")
     _uploads[key] = (DRAWN_NAME, molfile.encode())
     return _uploads[key]
 
@@ -84,7 +95,8 @@ def molfile_to_atoms(molfile):
     RDLogger.DisableLog("rdApp.*")
     mol = Chem.MolFromMolBlock(molfile, removeHs=False)
     if mol is None or mol.GetNumAtoms() == 0:
-        raise ColabUMAError("描いた構造を読み取れませんでした。", "原子の価数（結合の数）がおかしくないか確認して、描き直してください。")
+        raise ColabUMAError("Could not read the drawn structure.", "Check the valences (number of bonds) of the atoms and draw it again.",
+                            ja="描いた構造を読み取れませんでした。", ja_hint="原子の価数（結合の数）がおかしくないか確認して、描き直してください。")
     smiles = Chem.MolToSmiles(Chem.RemoveHs(mol))
     mol = Chem.AddHs(mol)
     params = AllChem.ETKDGv3()
@@ -94,7 +106,9 @@ def molfile_to_atoms(molfile):
         params.useRandomCoords = True
         ids = list(AllChem.EmbedMultipleConfs(mol, N_CONFORMERS, params))
     if not ids:
-        raise ColabUMAError("描いた構造から 3D の座標を作れませんでした。", "ひずみの大きい構造かもしれません。xyz か gjf で入力してください。")
+        raise ColabUMAError("Could not make 3D coordinates from the drawn structure.",
+                            "It may be very strained. Give it as an xyz or gjf file instead.",
+                            ja="描いた構造から 3D の座標を作れませんでした。", ja_hint="ひずみの大きい構造かもしれません。xyz か gjf で入力してください。")
     if AllChem.MMFFHasAllMoleculeParams(mol):
         energies = [e for _, e in AllChem.MMFFOptimizeMoleculeConfs(mol, maxIters=2000)]
     else:
@@ -123,8 +137,10 @@ def check_elements(numbers):
     bad = sorted({chemical_symbols[z] if 0 < z < len(chemical_symbols) else "X"
                   for z in numbers if z < 1 or z > MAX_Z})
     if bad:
-        raise ColabUMAError(f"UMAが扱えない元素が含まれています：{', '.join(bad)}",
-                            "UMA（omol）が扱えるのは H〜Bi（原子番号1〜83）です。該当する元素を除くか、別の手法を使ってください。")
+        raise ColabUMAError(f"The structure has elements UMA cannot handle: {', '.join(bad)}",
+                            "UMA (omol) handles H–Bi (Z = 1–83). Remove those elements or use another method.",
+                            ja=f"UMAが扱えない元素が含まれています：{', '.join(bad)}",
+                            ja_hint="UMA（omol）が扱えるのは H〜Bi（原子番号1〜83）です。該当する元素を除くか、別の手法を使ってください。")
 
 
 _FLOAT = re.compile(r"^[-+]?(\d+\.?\d*|\.\d+)([eEdD][-+]?\d+)?$")
@@ -172,8 +188,10 @@ def read_gjf(path, fname):
     while i < n and (not lines[i].strip() or lines[i].lstrip().startswith("%")):
         i += 1
     if i >= n or not lines[i].lstrip().startswith("#"):
-        raise ColabUMAError(f"「{fname}」にルートセクション（# で始まる行）が見つかりませんでした。",
-                            "Gaussianの入力ファイル（.gjf / .com）か確認してください。")
+        raise ColabUMAError(f"No route section (a line starting with #) was found in \"{fname}\".",
+                            "Check that it is a Gaussian input file (.gjf / .com).",
+                            ja=f"「{fname}」にルートセクション（# で始まる行）が見つかりませんでした。",
+                            ja_hint="Gaussianの入力ファイル（.gjf / .com）か確認してください。")
     for _ in range(2):  # ルートセクションとタイトルを読み飛ばす
         while i < n and lines[i].strip():
             i += 1
@@ -183,8 +201,11 @@ def read_gjf(path, fname):
     try:
         gjf_cm = (int(cm[0]), int(cm[1]))
     except (IndexError, ValueError):
-        raise ColabUMAError(f"「{fname}」の電荷・多重度の行を読み取れませんでした。",
-                            "ルートセクションとタイトルの後に空行があり、その次の行が「0 1」のような電荷・多重度になっているか確認してください。") from None
+        raise ColabUMAError(f"Could not read the charge and multiplicity line of \"{fname}\".",
+                            "Check that a blank line follows the route section and the title, and that the next line is "
+                            "the charge and multiplicity, such as \"0 1\".",
+                            ja=f"「{fname}」の電荷・多重度の行を読み取れませんでした。",
+                            ja_hint="ルートセクションとタイトルの後に空行があり、その次の行が「0 1」のような電荷・多重度になっているか確認してください。") from None
     i += 1
     atom_lines = []
     while i < n and lines[i].strip():
@@ -194,19 +215,25 @@ def read_gjf(path, fname):
     if atom_lines and all(parsed):
         for raw, sym, _ in parsed:
             if sym == "Tv":
-                raise ColabUMAError("gjfに並進ベクトル（Tv）があります。周期系の最適化には対応していません。",
-                                    "Tv の行を消して、分子として計算してください。")
+                raise ColabUMAError("The gjf has translation vectors (Tv). Periodic systems are not supported.",
+                                    "Delete the Tv lines and compute it as a molecule.",
+                                    ja="gjfに並進ベクトル（Tv）があります。周期系の最適化には対応していません。",
+                                    ja_hint="Tv の行を消して、分子として計算してください。")
             if sym not in chemical_symbols or sym == "X":
-                raise ColabUMAError(f"gjfの原子「{raw}」を元素として読み取れませんでした。",
-                                    "ゴースト原子（Bq）やダミー原子（X）は使えません。その行を消してください。")
+                raise ColabUMAError(f"Could not read the gjf atom \"{raw}\" as an element.",
+                                    "Ghost atoms (Bq) and dummy atoms (X) cannot be used. Delete that line.",
+                                    ja=f"gjfの原子「{raw}」を元素として読み取れませんでした。",
+                                    ja_hint="ゴースト原子（Bq）やダミー原子（X）は使えません。その行を消してください。")
         return Atoms([p[1] for p in parsed], positions=[p[2] for p in parsed]), gjf_cm
     try:  # デカルト座標でなければ Z-matrix とみなして ASE で読む
         atoms = ase_read(path, format="gaussian-in")
         atoms.calc = None
         return atoms, gjf_cm
     except Exception:
-        raise ColabUMAError(f"「{fname}」の分子構造を読み取れませんでした。",
-                            "GaussViewで開いて保存し直すか、「元素記号 x y z」のデカルト座標で書かれているか確認してください。") from None
+        raise ColabUMAError(f"Could not read the molecular structure in \"{fname}\".",
+                            "Open and save it again in GaussView, or check that it uses Cartesian coordinates \"element x y z\".",
+                            ja=f"「{fname}」の分子構造を読み取れませんでした。",
+                            ja_hint="GaussViewで開いて保存し直すか、「元素記号 x y z」のデカルト座標で書かれているか確認してください。") from None
 
 
 def read_frames(fname, data, charge, multiplicity, uma=True):
@@ -219,13 +246,14 @@ def read_frames(fname, data, charge, multiplicity, uma=True):
     if fname == DRAWN_NAME:
         atoms, smiles, formal = molfile_to_atoms(data.decode())
         if formal != charge:
-            warn(f"描いた構造の形式電荷の合計（{formal:+d}）とフォームの電荷（{charge:+d}）が違います。計算にはフォームの値を使います。")
-        return [prepare(atoms, charge, multiplicity, uma)], f"描いた構造: {smiles}（RDKit で 3D 化）"
+            warn(f"The total formal charge of the drawing ({formal:+d}) differs from the charge in the form ({charge:+d}). "
+                 "The form value is used.")
+        return [prepare(atoms, charge, multiplicity, uma)], f"drawn: {smiles} (3D by RDKit)"
     if os.path.splitext(fname)[1].lower() in GJF_EXTENSIONS:
         atoms, gjf_cm = read_gjf(path, fname)
         if gjf_cm != (charge, multiplicity):
-            warn(f"「{fname}」に書かれた電荷・多重度（{gjf_cm[0]} {gjf_cm[1]}）とフォームの値（{charge} {multiplicity}）が違います。"
-                 "計算にはフォームの値を使います。")
+            warn(f"The charge and multiplicity in \"{fname}\" ({gjf_cm[0]} {gjf_cm[1]}) differ from the form "
+                 f"({charge} {multiplicity}). The form values are used.")
         frames, kind = [atoms], "gjf"
     else:
         frames = None
@@ -236,9 +264,12 @@ def read_frames(fname, data, charge, multiplicity, uma=True):
             except Exception:
                 pass
         if not frames:
-            raise ColabUMAError(f"「{fname}」をxyzファイルとして読み込めませんでした。",
-                                "1行目が原子数、2行目がコメント、3行目以降が「元素記号 x y z」（単位Å）の形式か確認してください。"
-                                "Gaussianの入力ファイルなら拡張子を .gjf か .com にしてください。")
+            raise ColabUMAError(f"Could not read \"{fname}\" as an xyz file.",
+                                "Check that line 1 is the number of atoms, line 2 a comment, and the rest \"element x y z\" (Å). "
+                                "For a Gaussian input file, use the extension .gjf or .com.",
+                                ja=f"「{fname}」をxyzファイルとして読み込めませんでした。",
+                                ja_hint="1行目が原子数、2行目がコメント、3行目以降が「元素記号 x y z」（単位Å）の形式か確認してください。"
+                                        "Gaussianの入力ファイルなら拡張子を .gjf か .com にしてください。")
         kind = "xyz"
     return [prepare(a, charge, multiplicity, uma) for a in frames], f"{kind}: {fname}"
 
@@ -247,7 +278,7 @@ def read_structure(fname, data, charge, multiplicity, uma=True):
     """先頭の1構造だけを使う。(atoms, 入力の説明) を返す。"""
     frames, desc = read_frames(fname, data, charge, multiplicity, uma)
     if len(frames) > 1:
-        warn(f"「{fname}」には {len(frames)} 個の構造が入っています。先頭の構造だけを使います。")
+        warn(f"\"{fname}\" holds {len(frames)} structures. Only the first one is used.")
     return frames[0], desc
 
 
@@ -268,15 +299,18 @@ def prepare(atoms, charge, multiplicity, uma=True):
 
 def check_form(fmax, max_steps, multiplicity):
     if fmax <= 0:
-        raise ColabUMAError("収束判定 fmax は正の数にしてください。", "通常は 0.02 eV/Å 程度です。")
+        raise ColabUMAError("fmax must be a positive number.", "A typical value is about 0.02 eV/Å.",
+                            ja="収束判定 fmax は正の数にしてください。", ja_hint="通常は 0.02 eV/Å 程度です。")
     if max_steps < 1:
-        raise ColabUMAError("最大ステップ数は1以上にしてください。", "通常は 500 程度です。")
+        raise ColabUMAError("The maximum number of steps must be 1 or more.", "A typical value is about 500.",
+                            ja="最大ステップ数は1以上にしてください。", ja_hint="通常は 500 程度です。")
     check_multiplicity(multiplicity)
 
 
 def check_multiplicity(multiplicity):
     if multiplicity < 1:
-        raise ColabUMAError("スピン多重度は1以上の整数にしてください。", "閉殻分子なら1（一重項）です。")
+        raise ColabUMAError("The spin multiplicity must be an integer of 1 or more.", "A closed-shell molecule is 1 (singlet).",
+                            ja="スピン多重度は1以上の整数にしてください。", ja_hint="閉殻分子なら1（一重項）です。")
 
 
 def check_charge_multiplicity(numbers, charge, multiplicity):
@@ -285,8 +319,11 @@ def check_charge_multiplicity(numbers, charge, multiplicity):
     if n_electrons <= 0 or n_unpaired > n_electrons or (n_electrons - n_unpaired) % 2:
         suggest = "1, 3, …" if n_electrons % 2 == 0 else "2, 4, …"
         raise ColabUMAError(
-            f"電荷 {charge:+d}・スピン多重度 {multiplicity} の組み合わせはこの分子では成り立ちません（電子数 {n_electrons}）。",
-            f"多重度は 2S+1 です。電子数が偶数なら多重度は奇数、奇数なら偶数になります。この電荷なら多重度は {suggest} が候補です。")
+            f"Charge {charge:+d} and spin multiplicity {multiplicity} are not possible for this molecule ({n_electrons} electrons).",
+            f"The multiplicity is 2S+1: odd for an even number of electrons, even for an odd number. "
+            f"With this charge, try a multiplicity of {suggest}.",
+            ja=f"電荷 {charge:+d}・スピン多重度 {multiplicity} の組み合わせはこの分子では成り立ちません（電子数 {n_electrons}）。",
+            ja_hint=f"多重度は 2S+1 です。電子数が偶数なら多重度は奇数、奇数なら偶数になります。この電荷なら多重度は {suggest} が候補です。")
 
 
 def out_prefix(name):

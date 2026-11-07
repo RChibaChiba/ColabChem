@@ -7,23 +7,32 @@ from IPython.display import HTML, display
 
 
 class ColabUMAError(Exception):
-    # 利用者に見せるエラー。トレースバックの代わりに日本語の一文と対処法を表示する
-    def __init__(self, message, hint=""):
+    # 利用者に見せるエラー。トレースバックの代わりに、英語の一文と対処法を表示し、その下に日本語も添える
+    def __init__(self, message, hint="", ja="", ja_hint=""):
         super().__init__(message)
         self.message = message
         self.hint = hint
+        self.ja = ja
+        self.ja_hint = ja_hint
 
 
-def _box(kind, message, hint=""):
+def _box(kind, message, hint="", ja="", ja_hint=""):
     bg, fg, label = {
-        "error": ("#fdecea", "#b3261e", "エラー"),
-        "warn": ("#fff4e5", "#8a5300", "注意"),
+        "error": ("#fdecea", "#b3261e", "Error"),
+        "warn": ("#fff4e5", "#8a5300", "Note"),
         "ok": ("#e8f5e9", "#1b5e20", "OK"),
     }[kind]
-    hint_html = f"<div style='margin-top:4px'>対処法：{html.escape(hint)}</div>" if hint else ""
+    sub = "style='margin-top:2px;font-size:13px;opacity:.8'"
+    body = f"<b>{label}</b>　{html.escape(message)}"
+    if ja:
+        body += f"<div {sub}>{html.escape(ja)}</div>"
+    if hint:
+        body += f"<div style='margin-top:4px'>Fix: {html.escape(hint)}</div>"
+    if ja_hint:
+        body += f"<div {sub}>対処法：{html.escape(ja_hint)}</div>"
     display(HTML(
         f"<div style='background:{bg};color:{fg};padding:10px 14px;border-radius:6px;"
-        f"margin:6px 0;font-size:14px;line-height:1.6'><b>{label}</b>　{html.escape(message)}{hint_html}</div>"
+        f"margin:6px 0;font-size:14px;line-height:1.6'>{body}</div>"
     ))
 
 
@@ -40,12 +49,12 @@ def heading(text):
 
 
 def _show_colabuma_error(shell, etype, evalue, tb, tb_offset=None):
-    _box("error", evalue.message, evalue.hint)
+    _box("error", evalue.message, evalue.hint, evalue.ja, evalue.ja_hint)
     return []
 
 
 def install_error_handler():
-    # ColabUMAError をトレースバックではなく日本語の箱で表示する
+    # ColabUMAError をトレースバックではなく箱で表示する
     from IPython import get_ipython
 
     shell = get_ipython()
@@ -58,7 +67,7 @@ def bar_row(label, fraction, text):
     fraction = min(max(fraction, 0.0), 1.0)
     color = "#34a853" if fraction >= 1.0 else "#1a73e8"
     return (f"<div style='display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px'>"
-            f"<div style='flex:none;width:5em'>{html.escape(label)}</div>"
+            f"<div style='flex:none;width:7em'>{html.escape(label)}</div>"
             f"<div style='flex:1;max-width:320px;height:14px;background:#dadce0;border-radius:4px;overflow:hidden'>"
             f"<div style='width:{fraction * 100:.1f}%;height:100%;background:{color}'></div></div>"
             f"<div style='flex:none'>{html.escape(text)}</div></div>")

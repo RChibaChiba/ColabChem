@@ -6,12 +6,26 @@ import numpy as np
 
 from .ui import ColabUMAError, ProgressDisplay, bar_row, convergence_fraction, warn
 
-FMAX_PRESETS = {"loose（0.05）": 0.05, "normal（0.02）": 0.02, "tight（0.001）": 0.001}
+FMAX_PRESETS = {"loose (0.05)": 0.05, "normal (0.02)": 0.02, "tight (0.001)": 0.001}
+CUSTOM = "custom"
 IMAG_THRESHOLD = 20.0  # cm^-1。これより小さい虚振動は数値誤差とみなす
 
 
+def convergence_key(convergence):
+    """フォームの収束判定を FMAX_PRESETS のキーか CUSTOM にする（以前の日本語・全角括弧の値も受け付ける）。"""
+    key = convergence.strip().replace("（", " (").replace("）", ")").replace("  ", " ")
+    key = CUSTOM if key in ("数値指定", CUSTOM) else key
+    if key != CUSTOM and key not in FMAX_PRESETS:
+        raise ColabUMAError(f"The convergence setting \"{convergence}\" is not supported.",
+                            f"Choose one of {', '.join(FMAX_PRESETS)} or {CUSTOM}.",
+                            ja=f"収束判定「{convergence}」には対応していません。",
+                            ja_hint=f"{', '.join(FMAX_PRESETS)}、{CUSTOM} から選んでください。")
+    return key
+
+
 def fmax_from_form(convergence, fmax_custom):
-    return fmax_custom if convergence == "数値指定" else FMAX_PRESETS[convergence]
+    key = convergence_key(convergence)
+    return fmax_custom if key == CUSTOM else FMAX_PRESETS[key]
 
 
 @dataclass
@@ -28,11 +42,11 @@ class Job:
     convergence: str = ""
 
     def condition_lines(self):
-        return [f"電荷: {self.charge}", f"スピン多重度: {self.multiplicity}",
-                f"モデル: {self.model_name}", f"タスク: {self.task_name}",
-                f"最適化アルゴリズム: {self.optimizer_name}",
-                f"fmax: {self.fmax} eV/Å" + (f"（{self.convergence}）" if self.convergence else ""),
-                f"最大ステップ数: {self.max_steps}"]
+        return [f"Charge: {self.charge}", f"Spin multiplicity: {self.multiplicity}",
+                f"Model: {self.model_name}", f"Task: {self.task_name}",
+                f"Optimizer: {self.optimizer_name}",
+                f"fmax: {self.fmax} eV/Å" + (f" ({convergence_key(self.convergence)})" if self.convergence else ""),
+                f"Max steps: {self.max_steps}"]
 
 
 def _oom_error():
@@ -69,7 +83,7 @@ def run(atoms, calc, job, label, *, progress=None, extra_rows=None, optimizer=No
 
     def rows():
         f = hist["fmax"]
-        row = bar_row("収束", convergence_fraction(f[0], f[-1], fmax),
+        row = bar_row("Converge", convergence_fraction(f[0], f[-1], fmax),
                       f"{label}　fmax {f[-1]:.4f} → {fmax} eV/Å　step {len(f) - 1}/{max_steps}")
         return (extra_rows() if extra_rows else []) + [row]
 
@@ -87,8 +101,9 @@ def run(atoms, calc, job, label, *, progress=None, extra_rows=None, optimizer=No
     try:
         opt.run(fmax=fmax, steps=max_steps)
     except _oom_error():
-        raise ColabUMAError("GPUのメモリが足りません。",
-                            "モデルを uma-s-1p1 などの小さいものにするか、原子数を減らしてください。") from None
+        raise ColabUMAError("The GPU ran out of memory.", "Use a smaller model such as uma-s-1p1, or fewer atoms.",
+                            ja="GPUのメモリが足りません。",
+                            ja_hint="モデルを uma-s-1p1 などの小さいものにするか、原子数を減らしてください。") from None
     if not hist["energy"]:  # 最初の構造ですでに収束していて記録が呼ばれなかったとき
         record()
     progress.show(rows(), force=True)
@@ -97,7 +112,7 @@ def run(atoms, calc, job, label, *, progress=None, extra_rows=None, optimizer=No
          "fmax_target": fmax}
     if not quiet:
         print(f"  {label}: step {r['steps']:4d}  E = {r['energy']:.6f} eV  fmax = {r['fmax']:.4f} eV/Å"
-              f"  {'収束' if r['converged'] else '未収束'}（{r['seconds']:.1f} 秒）")
+              f"  {'converged' if r['converged'] else 'NOT converged'} ({r['seconds']:.1f} s)")
     return r
 
 
@@ -110,12 +125,13 @@ def optimize(atoms, calc, job, label, **kw):
 
 def warn_unconverged(r):
     if not r["converged"]:
-        warn(f"{r['label']}は最大ステップ数（{r['max_steps']}）までに収束しませんでした。結果は途中の構造です。",
-             "最大ステップ数を増やすか、fmax を緩めてもう一度実行してください。")
+        warn(f"{r['label']} did not converge within the maximum number of steps ({r['max_steps']}). "
+             "The result is the last structure reached.",
+             "Increase the maximum steps or loosen fmax, then run again.")
 
 
 # --- 振動解析 ---
-def numerical_hessian(atoms, calc, delta=0.01, label="ヘシアン", progress=None):
+def numerical_hessian(atoms, calc, delta=0.01, label="Hessian", progress=None):
     """中心差分のヘシアン（eV/Å^2、形は (3N, 3N)）。力の計算は 6N 回。"""
     a = atoms.copy()
     a.set_constraint()
@@ -132,7 +148,7 @@ def numerical_hessian(atoms, calc, delta=0.01, label="ヘシアン", progress=No
             a.positions = x
             f.append(a.get_forces().ravel())
         H[k] = -(f[0] - f[1]) / (2 * delta)
-        progress.show([bar_row(label, (k + 1) / n, f"{2 * (k + 1)}/{2 * n} 回の力の計算")], force=k == n - 1)
+        progress.show([bar_row(label, (k + 1) / n, f"{2 * (k + 1)}/{2 * n} force calls")], force=k == n - 1)
     a.positions = x0
     return 0.5 * (H + H.T)
 
@@ -185,11 +201,11 @@ def frequencies(atoms, H):
             "force_const": k_mdyne, "n_imag": n_imag, "n_ext": n_ext, "all": all_freqs}
 
 
-def vibrations(atoms, calc, label="振動計算"):
+def vibrations(atoms, calc, label="Vibrational analysis"):
     if len(atoms) == 1:
-        warn("原子が1つなので振動計算は行いません。")
+        warn("There is only one atom, so no vibrational analysis is done.")
         return None
-    print(f"{label}をしています（力の計算 {6 * len(atoms)} 回）…")
+    print(f"{label} ({6 * len(atoms)} force calls)…")
     H = numerical_hessian(atoms, calc, label=label)
     r = frequencies(atoms, H)
     r["hessian"] = H
@@ -197,16 +213,16 @@ def vibrations(atoms, calc, label="振動計算"):
 
 
 def freq_text(vib):
-    lines = [f"# 振動数 (cm^-1)。負の値は虚振動。並進・回転 {vib['n_ext']} 個を除いた値",
-             f"# 虚振動の本数（|ν| >= {IMAG_THRESHOLD:.0f} cm^-1）: {vib['n_imag']}"]
+    lines = [f"# Frequencies (cm^-1). Negative values are imaginary. {vib['n_ext']} translations/rotations removed",
+             f"# Number of imaginary frequencies (|nu| >= {IMAG_THRESHOLD:.0f} cm^-1): {vib['n_imag']}"]
     lines += [f"{i + 1:4d} {v:12.2f}" for i, v in enumerate(vib["freqs"])]
-    lines += ["", "# 全モード（並進・回転を射影する前）"] + [f"{i + 1:4d} {v:12.2f}" for i, v in enumerate(vib["all"])]
+    lines += ["", "# All modes (before projecting out translations and rotations)"] + [f"{i + 1:4d} {v:12.2f}" for i, v in enumerate(vib["all"])]
     return "\n".join(lines) + "\n"
 
 
 
 # --- 結果の表示（Opt ノート） ---
-def report(best, vib, job, label="構造最適化"):
+def report(best, vib, job, label="Optimization"):
     """3D表示・エネルギー・収束グラフ・振動を表示し、(出力ファイルの dict, ログの行) を返す。"""
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -226,10 +242,10 @@ def report(best, vib, job, label="構造最適化"):
                         f"energy_eV={E:.8f} energy_Ha={E_h:.10f} fmax={best['fmax']:.5f} converged={best['converged']} {cond}")
     show_structure(opt_xyz)
 
-    display(pd.DataFrame({"値": [
-        f"{atoms.get_chemical_formula()}（{len(atoms)} 原子）", f"{E:.6f} eV", f"{E_h:.8f} Hartree",
-        f"{best['fmax']:.4f} eV/Å", str(best["steps"]), "はい" if best["converged"] else "いいえ",
-    ]}, index=["組成", "最終エネルギー", "最終エネルギー", "最終 fmax", "ステップ数", "収束"]))
+    display(pd.DataFrame({"Value": [
+        f"{atoms.get_chemical_formula()} ({len(atoms)} atoms)", f"{E:.6f} eV", f"{E_h:.8f} Hartree",
+        f"{best['fmax']:.4f} eV/Å", str(best["steps"]), "yes" if best["converged"] else "no",
+    ]}, index=["Formula", "Final energy", "Final energy", "Final fmax", "Steps", "Converged"]))
     warn_unconverged(best)
 
     # --- 収束グラフ（Colabは日本語フォントがないため軸ラベルは英語） ---
@@ -251,23 +267,23 @@ def report(best, vib, job, label="構造最適化"):
     files = {"opt.xyz": opt_xyz, "opt.log": gaussian.opt_log(best, job, atoms.numbers),
              "traj.xyz": "".join(xyz_block(symbols, pos, f"step={i} energy_eV={e:.8f} fmax={fm:.5f}")
                                  for i, (pos, e, fm) in enumerate(zip(h["frames"], h["energy"], h["fmax"])))}
-    log = [f"[{label}の結果]",
+    log = [f"[{label} result]",
            f"E = {E:.8f} eV ({E_h:.10f} Ha)  fmax = {best['fmax']:.5f}  steps = {best['steps']}  converged = {best['converged']}",
-           f"振動計算: {'オン' if vib is not None else 'オフ'}",
+           f"Vibrational analysis: {'on' if vib is not None else 'off'}",
            "", f"{'step':>5s} {'energy_eV':>18s} {'fmax_eV/A':>12s}"]
     log += [f"{i:5d} {e:18.8f} {fm:12.5f}" for i, (e, fm) in enumerate(zip(h["energy"], h["fmax"]))]
 
     # --- 振動計算の結果 ---
     if vib is not None:
-        print(f"虚振動の本数: {vib['n_imag']}（{IMAG_THRESHOLD:.0f} cm⁻¹ 未満の虚振動は数値誤差として除外）")
-        print(f"最小振動数: {vib['freqs'].min():.1f} cm⁻¹（負の値は虚振動）")
+        print(f"Imaginary frequencies: {vib['n_imag']} (those below {IMAG_THRESHOLD:.0f} cm⁻¹ are treated as numerical noise)")
+        print(f"Lowest frequency: {vib['freqs'].min():.1f} cm⁻¹ (negative values are imaginary)")
         if vib["n_imag"] > 0:
-            warn(f"虚振動が {vib['n_imag']} 本あります。極小点ではなく鞍点の可能性があります。",
-                 "構造を少しずらして再最適化してください。")
-            print("最も大きい虚振動のモード：")
+            warn(f"There are {vib['n_imag']} imaginary frequencies. This may be a saddle point, not a minimum.",
+                 "Displace the structure slightly and optimize again.")
+            print("Mode of the largest imaginary frequency:")
             show_mode(atoms, vib["modes"][0])
         else:
-            ok("虚振動はありません。極小点に収束しています。")
+            ok("No imaginary frequencies. The structure is a minimum.")
         files["freq.txt"] = freq_text(vib)
         files["freq.log"] = gaussian.freq_log(atoms, E, best["hist"]["forces"][-1], vib, job)
     return files, log

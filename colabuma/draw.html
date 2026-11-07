@@ -1,11 +1,11 @@
 <!-- 構造を描く入力。structure.draw が __JSME_URL__ と __PREVIOUS__ を置き換えて表示する。
-     「この構造で計算」を押すと window.colabchemDrawn（Promise）が molfile で解決し、Python の eval_js に返る。 -->
+     「Use this structure」を押すと window.colabchemDrawn（Promise）が molfile で解決し、Python の eval_js に返る。 -->
 <div style="font-family:sans-serif;font-size:13px;color:#222">
   <div id="colabchem-jsme" style="width:620px;height:420px;border:1px solid #ddd;border-radius:6px"></div>
   <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
     <button id="colabchem-draw-ok" disabled
-            style="padding:6px 16px;border:none;border-radius:6px;background:#1a73e8;color:#fff;font-size:14px;cursor:pointer">この構造で計算</button>
-    <span id="colabchem-draw-status" style="color:#555">エディタを読み込んでいます…</span>
+            style="padding:6px 16px;border:none;border-radius:6px;background:#1a73e8;color:#fff;font-size:14px;cursor:pointer">Use this structure</button>
+    <span id="colabchem-draw-status" style="color:#555">Loading the editor…</span>
   </div>
 </div>
 <script>
@@ -23,18 +23,18 @@
     const applet = new JSApplet.JSME("colabchem-jsme", "620px", "420px", { options: "noquery,nosearchinchiKey" });
     if (previous) applet.readMolFile(previous);
     button.disabled = false;
-    status(previous ? "前回の構造を表示しています。そのまま押せば同じ構造で計算します。" : "");
+    status(previous ? "Showing the previous structure. Press the button to use it again." : "");
     button.addEventListener("click", () => {
-      if (!applet.smiles()) { status("構造が描かれていません。", "#b3261e"); return; }
+      if (!applet.smiles()) { status("Nothing is drawn yet.", "#b3261e"); return; }
       button.disabled = true;
       button.style.background = "#9aa0a6";
-      status("受け取りました。ここからは放置できます。", "#1b5e20");
+      status("Received. You can leave it running now.", "#1b5e20");
       resolveDrawn(applet.molFile());
     });
   };
   const tag = document.createElement("script");
   tag.src = "__JSME_URL__";
-  tag.onerror = () => status("構造エディタ（JSME）を読み込めませんでした。入力を「ファイル」にしてください。", "#b3261e");
+  tag.onerror = () => status("Could not load the structure editor (JSME). Set the input to file.", "#b3261e");
   document.head.appendChild(tag);
 })();
 </script>

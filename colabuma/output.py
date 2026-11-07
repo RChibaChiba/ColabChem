@@ -9,9 +9,9 @@ from . import env
 
 def log_text(title, source_desc, job, sections):
     """log.txt の中身。sections は各計算が返したログの行のリスト。"""
-    lines = [title, f"日時: {datetime.datetime.now().isoformat(timespec='seconds')}", "",
-             "[入力条件]", f"入力: {source_desc}"] + job.condition_lines()
-    lines += ["", "[ソフトウェア]"] + env.software_lines()
+    lines = [title, f"Date: {datetime.datetime.now().isoformat(timespec='seconds')}", "",
+             "[Input]", f"Input: {source_desc}"] + job.condition_lines()
+    lines += ["", "[Software]"] + env.software_lines()
     for sec in sections:
         lines += [""] + sec
     return "\n".join(lines) + "\n"
@@ -31,11 +31,11 @@ def save_zip(prefix, files, download=True):
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for p in paths:
             z.write(p, os.path.basename(p))
-    print("ZIPの中身:", ", ".join(os.path.basename(p) for p in paths))
+    print("Files in the ZIP:", ", ".join(os.path.basename(p) for p in paths))
     if download:
         try:
             from google.colab import files as colab_files
             colab_files.download(zip_path)
         except ImportError:
-            print("ZIPを保存しました:", zip_path)
+            print("ZIP saved:", zip_path)
     return zip_path
