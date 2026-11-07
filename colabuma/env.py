@@ -18,6 +18,8 @@ FAIRCHEM_VERSION = "2.25.0"
 EXTRAS = {
     # fairchem が一緒に入れるもの。UMA を使わない ColabDFT では別に入れる
     "structure": {"apt": [], "pip": [("ase", "ase"), ("py3Dmol", "py3Dmol")]},
+    # 描いた構造（JSME）から 3D の座標を作る。「描く」を選んだときだけ入れる
+    "draw": {"apt": [], "pip": [("rdkit", "rdkit")]},
     # DMF（pydmf）は IPOPT を使う。cyipopt は pip のバイナリがないので、apt の Ipopt からビルドする
     "ts": {
         "apt": ["coinor-libipopt-dev", "liblapack-dev", "libblas-dev", "pkg-config"],
@@ -106,7 +108,7 @@ def _install_extra(name):
                if (others and pkg == keep) or installed(pkg) is None or ("==" in pin and installed(pkg) != pin.split("==")[1])]
     if not missing:
         return False
-    label = {"structure": "構造の読み込み（ASE）", "ts": "遷移状態探索（DMF・Sella）", "dft": "DFT（gpu4pyscf）"}[name]
+    label = {"structure": "構造の読み込み（ASE）", "draw": "描いた構造の 3D 化（RDKit）", "ts": "遷移状態探索（DMF・Sella）", "dft": "DFT（gpu4pyscf）"}[name]
     print(f"{label}のライブラリをインストールしています。1〜2分かかります…")
     if spec["apt"]:
         if shutil.which("apt-get") is None:
@@ -161,10 +163,11 @@ def setup(extras=()):
     return DEVICE
 
 
-def setup_dft():
-    """UMA を使わない DFT だけのインストール。fairchem も Hugging Face の認証もいらない。DEVICE を返す。"""
+def setup_dft(drawing=False):
+    """UMA を使わない DFT だけのインストール。fairchem も Hugging Face の認証もいらない。DEVICE を返す。
+    drawing なら、描いた構造を 3D にする RDKit も入れる。"""
     global DEVICE
-    for name in ("structure", "dft"):
+    for name in ("structure", "dft") + (("draw",) if drawing else ()):
         if _install_extra(name):
             ok("ライブラリのインストールが完了しました。")
     DEVICE = "cuda" if has_gpu() else "cpu"
@@ -249,7 +252,7 @@ def software_lines():
     import numpy as np
 
     lines = [f"Python {platform.python_version()}", f"ase {ase.__version__}"]
-    for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "cupy-cuda12x", "cutensor-cu12", "pyscf"):
+    for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "cupy-cuda12x", "cutensor-cu12", "pyscf", "rdkit"):
         if installed(pkg):
             lines.append(f"{pkg} {installed(pkg)}")
     try:

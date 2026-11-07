@@ -12,6 +12,7 @@
 | ColabUMA Workflow | Optimization → scan → transition state in one session | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow.ipynb) |
 | ColabDFT SPE | DFT single point only (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE.ipynb) |
 | ColabDFT ESP | DFT single point and 3D view of the electrostatic potential (ESP) (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_ESP.ipynb) |
+| ColabDFT MO | DFT single point and 3D view of molecular orbitals such as HOMO and LUMO (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_MO.ipynb) |
 
 Google Colab notebooks for geometry optimization, relaxed scans and transition state searches of molecules with Meta's machine learning potential **UMA**. Open a notebook in Colab and choose "Run all". You only need a structure (xyz or Gaussian gjf), the charge and the spin multiplicity.
 
@@ -32,6 +33,7 @@ The notebooks' forms and messages are in Japanese. This README gives the Japanes
 - Optimization → scan → transition state in a row, with a single install and model load ([ColabUMA Workflow](#colabuma-workflow))
 - DFT single point of your own structure as it is ([ColabDFT SPE](#colabdft-spe))
 - ESP of your own structure, colored on an electron density isosurface ([ColabDFT ESP](#colabdft-esp))
+- Molecular orbitals such as HOMO and LUMO of your own structure, shown as isosurfaces ([ColabDFT MO](#colabdft-mo))
 
 Not covered: a real IRC calculation (the simple IRC check in the TS notebook only displaces along the imaginary mode and optimizes), and periodic systems (crystals, surfaces).
 
@@ -197,6 +199,7 @@ If an xyz holds several structures, only the first is computed. Supported elemen
 
 | Item | Default | Description |
 |---|---|---|
+| `input_mode` | ファイル (file) | ファイル (file): choose an xyz or gjf. 描く (draw): draw the structure in an editor (JSME); hydrogens are added and RDKit makes the 3D structure (10 ETKDG conformers optimized with MMFF94, lowest one kept). The structure is not optimized further |
 | `isosurface` | 0.002 | Density of the isosurface that is colored (e/Bohr³) |
 | `grid_quality` | 標準 (standard) | Grid spacing. 粗い (coarse) 0.5 / 標準 (standard) 0.35 / 細かい (fine) 0.25 Bohr. Made coarser automatically for large molecules |
 | `esp_color_range` | 0 | Color range ± (kcal/mol). 0 means automatic. Use the same value when comparing molecules |
@@ -208,6 +211,25 @@ If an xyz holds several structures, only the first is computed. Supported elemen
 | `<output name>_spe.xyz` | The computed structure. Energy and settings in the comment line |
 | `<output name>_dft.csv` | DFT single point energy |
 | `<output name>_log.txt` | Input settings, software versions, results, minimum and maximum ESP on the surface |
+
+## ColabDFT MO
+
+[ColabDFT_MO.ipynb](ColabDFT_MO.ipynb) runs a DFT single point on the input structure as it is, and shows molecular orbitals (Kohn–Sham orbitals) such as HOMO and LUMO as positive and negative isosurfaces in 3D. Blue is positive, red is negative (the overall sign of an orbital has no meaning, so the colors can swap). An energy level diagram (occupations shown as ↑↓) sits next to the 3D view; click a level to show that orbital. Orbitals not given in the form are computed on click by the Colab runtime (only while it is connected). It also shows the HOMO and LUMO energies, the gap, and a table of the orbital energies near HOMO and LUMO. Only the orbitals given in the form are written as cube files to the ZIP. For open shells, α and β orbitals are shown separately. It does not optimize the structure, and needs neither UMA nor a token. The charge, multiplicity, functional and basis set items are the same as in [ColabDFT SPE](#colabdft-spe).
+
+| Item | Default | Description |
+|---|---|---|
+| `input_mode` | ファイル (file) | ファイル (file): choose an xyz or gjf. 描く (draw): draw the structure in an editor (JSME); hydrogens are added and RDKit makes the 3D structure (10 ETKDG conformers optimized with MMFF94, lowest one kept). The structure is not optimized further |
+| `orbitals` | HOMO, LUMO | Orbitals to show, separated by commas. `HOMO-1`, `LUMO+2` and orbital numbers (from 1, lowest energy first) also work. Up to 8 at a time |
+| `isovalue` | 0.02 | Isosurface value ± (Bohr^-3/2). Same as the GaussView default |
+| `grid_quality` | 標準 (standard) | Grid spacing. 粗い (coarse) 0.5 / 標準 (standard) 0.35 / 細かい (fine) 0.25 Bohr. Made coarser automatically for large molecules |
+
+| File | Contents |
+|---|---|
+| `<output name>_mo<number>_<orbital>.cube` | Orbital values on the grid (Bohr^-3/2). For example `_mo5_homo.cube`, `_mo4_homom1.cube` (HOMO-1), `_mo7_lumop1.cube` (LUMO+1). Open shells get `_alpha` / `_beta` |
+| `<output name>_mo_energies.csv` | Energies (Hartree and eV) and occupations of all orbitals |
+| `<output name>_spe.xyz` | The computed structure. Energy and settings in the comment line |
+| `<output name>_dft.csv` | DFT single point energy |
+| `<output name>_log.txt` | Input settings, software versions, results, HOMO and LUMO energies and the gap |
 
 ## DFT memory and time
 
@@ -223,7 +245,7 @@ DFT is skipped when:
 
 **Memory warnings:** when memory looks tight, a note is shown in the structure preparation cell (before the UMA calculations start) and in the DFT cell. The size of the three-center integrals is an upper bound; it is often smaller in practice because small integrals are screened out. As a guide, on a T4 (15 GB GPU, about 12 GB CPU memory), for a molecule of about 80 atoms, def2-SVP fits in GPU memory, while def2-TZVP and larger are expected to exceed CPU memory too, so DFT is skipped.
 
-ColabDFT SPE and ESP exist to run DFT, so they do not skip it. They only show a note when memory looks tight.
+ColabDFT SPE, ESP and MO exist to run DFT, so they do not skip it. They only show a note when memory looks tight.
 
 About Colab timeouts:
 
@@ -238,12 +260,13 @@ Notebook cells only take the form values and call functions. The calculations li
 | Module | Contents |
 |---|---|
 | `env.py` | GPU and token checks, install, Hugging Face login, model load (once per session) |
-| `structure.py` | Upload, reading xyz and gjf, charge and multiplicity checks, 3D view |
+| `structure.py`, `draw.html` | Upload, drawing input (JSME → 3D with RDKit), reading xyz and gjf, charge and multiplicity checks, 3D view |
 | `opt.py` | Optimization and progress bars, vibrational analysis (numerical Hessian), results of the Opt notebook |
 | `scan.py` | Relaxed scan |
 | `ts.py` | DMF, Sella, TS checks, simple IRC check |
 | `dft.py` | DFT single points (gpu4pyscf, or CPU PySCF if the GPU is unavailable), memory estimate, time limit |
 | `esp.py` | Electron density and ESP on a grid, cube output, isosurface view |
+| `mo.py`, `mo_explorer.html` | Molecular orbitals on a grid, orbital energies, clickable level diagram with positive and negative isosurfaces |
 | `gaussian.py` | Writing Gaussian logs (opt / scan / freq / path) and gjf files |
 | `output.py` | log.txt and the ZIP |
 
@@ -309,6 +332,8 @@ This repository does not include the software below. When a notebook runs, it is
 | [cuTENSOR](https://developer.nvidia.com/cutensor) (`cutensor-cu12`) | Opt, TS, Workflow (DFT), ColabDFT | NVIDIA proprietary license |
 | [PySCF](https://github.com/pyscf/pyscf) | Opt, TS, Workflow (DFT), ColabDFT | Apache-2.0 |
 | [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt, TS, Workflow (DFT), ColabDFT | Apache-2.0 |
+| [RDKit](https://github.com/rdkit/rdkit) | ColabDFT ESP and MO (only with the 描く (draw) input) | BSD-3-Clause |
+| [JSME](https://jsme-editor.github.io/) (structure editor; not installed, the browser loads it from jsDelivr when shown) | ColabDFT ESP and MO (only with the 描く (draw) input) | BSD-3-Clause |
 
 These licenses are as stated by each package's distribution (PyPI and Ubuntu packages) as of November 2026. Libraries they depend on (PyTorch, NumPy, SciPy, etc.) are installed as well. Check each distribution for the exact terms.
 

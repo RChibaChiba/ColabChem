@@ -1,0 +1,193 @@
+<!-- 分子軌道のエネルギー準位図と 3D 表示。mo.explorer が __URL__ と __DATA__ を置き換えて表示する。 -->
+<div id="__UID__" class="mo-explorer" style="font-family:sans-serif;font-size:13px;color:#222">
+  <div style="color:#555;margin-bottom:4px">準位図の線（エネルギーは eV）かボタンをクリックすると、その軌道を表示します。実線は占有、点線は空の軌道です。</div>
+  <div class="mo-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px"></div>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
+    <div>
+      <svg class="mo-diagram" style="background:#fafafa;border:1px solid #ddd;border-radius:6px;cursor:default"></svg>
+    </div>
+    <div>
+      <div class="mo-title" style="font-weight:bold;min-height:1.4em;margin-bottom:2px"></div>
+      <div class="mo-viewer" style="position:relative;width:520px;height:420px;border:1px solid #ddd;border-radius:6px"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <span>等値面 ±</span>
+        <select class="mo-iso"></select>
+        <span style="color:#555">Bohr<sup>-3/2</sup>　<span style="color:#1f4fd8">■</span> 正　<span style="color:#d62728">■</span> 負</span>
+      </div>
+      <div class="mo-status" style="color:#8a5300;min-height:1.4em;margin-top:4px"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const D = __DATA__;
+  const root = document.getElementById(D.uid);
+  const $ = (sel) => root.querySelector(sel);
+  const status = (t) => { $(".mo-status").textContent = t || ""; };
+  const volumes = {};  // key → $3Dmol.VolumeData
+  let viewer = null, current = null, selectedKey = null;
+
+  // --- 準位図 ---
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const svg = $(".mo-diagram");
+  // 縦の位置はエネルギーの順。近い準位どうしが重ならないよう、最低 MIN_GAP px あける（等間隔の目盛りは付けない）
+  const H0 = 420, TOP = 14, BOTTOM = 14, MIN_GAP = 15, LINE = 30, GAP = 5, LABEL = 104, COLGAP = 16;
+  const HEAD = D.spins.length > 1 ? 18 : 0;
+  const energies = [...new Set(D.spins.flatMap((s) => s.orbitals.map((o) => o.e)))].sort((a, b) => b - a);
+  const clusters = [];  // 縮退（0.02 eV 以内）をまとめた、エネルギーの高い順の準位
+  for (const e of energies) {
+    const c = clusters[clusters.length - 1];
+    if (c && Math.abs(c.e - e) < 0.02) c.members.push(e); else clusters.push({ e, members: [e] });
+  }
+  const emax = clusters[0].e, emin = clusters[clusters.length - 1].e;
+  let prev = -Infinity;
+  for (const c of clusters) {
+    const linear = TOP + HEAD + (emax - c.e) / ((emax - emin) || 1) * (H0 - TOP - BOTTOM - HEAD);
+    c.y = Math.max(linear, prev + MIN_GAP);
+    prev = c.y;
+  }
+  const H = Math.max(H0, prev + BOTTOM);
+  const yOf = (e) => clusters.find((c) => c.members.some((m) => Math.abs(m - e) < 1e-9)).y;
+  const groupsOf = (orbs) => {  // 同じ y の軌道を横に並べる
+    const map = new Map();
+    for (const o of orbs) { const y = yOf(o.e); if (!map.has(y)) map.set(y, []); map.get(y).push(o); }
+    return [...map.entries()];
+  };
+  const colWidth = D.spins.map((s) => Math.max(...groupsOf(s.orbitals).map(([, g]) => g.length)) * (LINE + GAP) + LABEL);
+  const W = 10 + colWidth.reduce((a, b) => a + b, 0) + COLGAP * (D.spins.length - 1);
+  svg.setAttribute("width", W); svg.setAttribute("height", H);
+
+  const lines = {};  // key → <line>
+  let x0 = 10;
+  D.spins.forEach((spin, s) => {
+    if (HEAD) el("text", { x: x0, y: 14, "font-size": 12, "font-weight": "bold" }, svg).textContent = spin.name;
+    for (const [yy, g] of groupsOf(spin.orbitals)) {
+      g.forEach((o, k) => {
+        const key = `${s}:${o.i}`, x = x0 + k * (LINE + GAP);
+        const occupied = o.occ > 1e-6, frontier = /^(HOMO|LUMO)$/.test(o.label);
+        const hit = el("g", { style: "cursor:pointer" }, svg);
+        el("rect", { x: x - 2, y: yy - 7, width: LINE + 4, height: 14, fill: "transparent" }, hit);
+        lines[key] = el("line", { x1: x, x2: x + LINE, y1: yy, y2: yy, stroke: occupied ? "#333" : "#999",
+          "stroke-width": frontier ? 2.5 : 1.6, "stroke-dasharray": occupied ? "" : "4 2" }, hit);
+        // 電子：閉殻は ↑↓、開殻は α が ↑、β が ↓
+        const arrows = o.occ > 1.5 ? "↑↓" : occupied ? (spin.name === "β" ? "↓" : "↑") : "";
+        if (arrows) el("text", { x: x + LINE / 2, y: yy + 4, "text-anchor": "middle", "font-size": 11, fill: "#1a73e8",
+          "pointer-events": "none" }, hit).textContent = arrows;
+        el("title", {}, hit).textContent = `${o.label}${spin.name ? "（" + spin.name + "）" : ""}　${o.i + 1} 番\n` +
+          `${o.e.toFixed(3)} eV、占有数 ${+o.occ.toFixed(3)}`;
+        hit.addEventListener("click", () => select(key, o, spin.name));
+      });
+      const bold = g.some((o) => /^(HOMO|LUMO)$/.test(o.label));
+      el("text", { x: x0 + g.length * (LINE + GAP), y: yy + 4, "font-size": 10, fill: bold ? "#000" : "#555",
+        "font-weight": bold ? "bold" : "normal" }, svg).textContent = `${g.map((o) => o.label).join(", ")}  ${g[0].e.toFixed(2)}`;
+    }
+    x0 += colWidth[s] + COLGAP;
+  });
+
+  // --- 指定した軌道のボタン ---
+  for (const c of D.chips) {
+    const b = document.createElement("button");
+    b.textContent = `${c.name}（${c.e.toFixed(2)} eV）`;
+    b.style.cssText = "padding:3px 10px;border:1px solid #bbb;border-radius:14px;background:#fff;cursor:pointer;font-size:12px";
+    b.dataset.key = c.key;
+    b.addEventListener("click", () => {
+      const [s, i] = c.key.split(":").map(Number);
+      const o = D.spins[s].orbitals.find((x) => x.i === i) || { i, label: c.label, e: c.e, occ: c.occ };
+      select(c.key, o, D.spins[s].name);
+    });
+    $(".mo-chips").appendChild(b);
+  }
+
+  // --- 等値面の値 ---
+  const isoSel = $(".mo-iso");
+  [...new Set([0.005, 0.01, 0.02, 0.03, 0.05, 0.08, D.iso])].sort((a, b) => a - b).forEach((v) => {
+    const op = document.createElement("option");
+    op.value = v; op.textContent = v; if (v === D.iso) op.selected = true;
+    isoSel.appendChild(op);
+  });
+  isoSel.addEventListener("change", draw);
+
+  // --- 3D 表示 ---
+  function draw() {
+    if (!viewer || !current) return;
+    viewer.removeAllShapes();
+    status("");
+    const iso = parseFloat(isoSel.value);
+    if (current.range[1] > iso) viewer.addIsosurface(current.vol, { isoval: iso, color: D.pos, opacity: 0.85, smoothness: 3 });
+    if (current.range[0] < -iso) viewer.addIsosurface(current.vol, { isoval: -iso, color: D.neg, opacity: 0.85, smoothness: 3 });
+    if (current.range[1] <= iso && current.range[0] >= -iso) status("この等値面の値では面がありません。値を小さくしてください。");
+    viewer.render();
+  }
+
+  function highlight(key) {
+    for (const k in lines) {
+      lines[k].setAttribute("stroke", k === key ? "#e8710a" : lines[k].dataset.base || lines[k].getAttribute("stroke"));
+    }
+    root.querySelectorAll(".mo-chips button").forEach((b) => {
+      b.style.background = b.dataset.key === key ? "#fde7d4" : "#fff";
+      b.style.borderColor = b.dataset.key === key ? "#e8710a" : "#bbb";
+    });
+  }
+  for (const k in lines) lines[k].dataset.base = lines[k].getAttribute("stroke");
+
+  async function select(key, o, spinName) {
+    selectedKey = key;
+    highlight(key);
+    $(".mo-title").textContent = `${o.label}${spinName ? "（" + spinName + "）" : ""}　${o.i + 1} 番、` +
+      `${o.e.toFixed(3)} eV、占有数 ${+o.occ.toFixed(3)}`;
+    status("");
+    if (!volumes[key]) {
+      let cube = D.cubes[key];
+      if (!cube) {
+        const kernel = window.google && google.colab && google.colab.kernel;
+        if (!kernel) { status("この軌道は Colab のランタイムにつながっているときだけ計算できます。"); return; }
+        status("計算中…");
+        try {
+          const r = await kernel.invokeFunction("colabchem.mo_cube", key.split(":").map(Number), {});
+          const res = r.data["application/json"];
+          if (res.error) { status(res.error); return; }
+          cube = res.cube;
+        } catch (e) {
+          status("計算できませんでした。ランタイムが切れているときは、「軌道の計算」のセルから実行し直してください。");
+          return;
+        }
+        status("");
+      }
+      const vol = new $3Dmol.VolumeData(cube, "cube");
+      let lo = 0, hi = 0;
+      for (const v of vol.data) { if (v < lo) lo = v; if (v > hi) hi = v; }
+      volumes[key] = { vol, range: [lo, hi] };
+    }
+    if (selectedKey !== key) return;  // 計算中に別の軌道が選ばれた
+    current = volumes[key];
+    draw();
+  }
+
+  // --- 3Dmol.js の読み込み（py3Dmol と同じ版） ---
+  const ready = () => {
+    viewer = $3Dmol.createViewer($(".mo-viewer"), { backgroundColor: "white" });
+    viewer.addModel(D.xyz, "xyz");
+    viewer.setStyle({}, { stick: { radius: 0.12 }, sphere: { scale: 0.2 } });
+    viewer.zoomTo();
+    viewer.zoom(0.8);
+    viewer.render();
+    const first = D.chips[0];
+    if (first) root.querySelector(`.mo-chips button[data-key="${first.key}"]`).click();
+  };
+  if (window.$3Dmol) { ready(); return; }
+  // requirejs があるとき（Jupyter）も $3Dmol がグローバルに入るよう、py3Dmol と同じく exports と module を一時的に置き換える
+  const savedExports = window.exports, savedModule = window.module;
+  window.exports = {}; window.module = {};
+  const tag = document.createElement("script");
+  tag.src = "__URL__";
+  tag.onload = () => { window.exports = savedExports; window.module = savedModule; ready(); };
+  tag.onerror = () => status("3Dmol.js を読み込めませんでした。");
+  document.head.appendChild(tag);
+})();
+</script>
