@@ -2,7 +2,7 @@
 
 [English](README.md) | **日本語**
 
-[ホームページ（ColabChem）](https://rchibachiba.github.io/ColabChem/)
+[ホームページ（ColabChem）](https://rchibachiba.github.io/ColabChem/) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24035698.svg)](https://doi.org/10.5281/zenodo.24035698)
 
 | ノート | 内容 | 開く |
 |---|---|---|
@@ -291,7 +291,7 @@ ColabChem は、[ColabReaction](https://github.com/BILAB/ColabReaction)（東京
 
 論文で使う場合は、ColabChem に加えて、使った手法の文献も引用してください。ColabChem の引用情報は [CITATION.cff](CITATION.cff) にあり、GitHub のリポジトリページ右側の「Cite this repository」から APA や BibTeX の形式でコピーできます。
 
-- R. Chiba, ColabChem, https://github.com/RChibaChiba/ColabChem
+- R. Chiba, ColabChem, Zenodo, https://doi.org/10.5281/zenodo.24035698（すべての版をまとめた DOI。版ごとの DOI は Zenodo のページにあり、v0.3.0 は 10.5281/zenodo.24035699）
 - A. H. Larsen *et al.*, *J. Phys.: Condens. Matter* **29**, 273002 (2017).（ASE。すべてのノートで使います）
 
 UMA を使うノート（ColabUMA）では、次も引用してください（ColabDFT では UMA を使わないので不要です）。

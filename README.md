@@ -2,7 +2,7 @@
 
 **English** | [日本語](README.ja.md)
 
-[Homepage (ColabChem)](https://rchibachiba.github.io/ColabChem/en/)
+[Homepage (ColabChem)](https://rchibachiba.github.io/ColabChem/en/) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24035698.svg)](https://doi.org/10.5281/zenodo.24035698)
 
 | Notebook | What it does | Open |
 |---|---|---|
@@ -291,7 +291,7 @@ ColabChem draws heavily on [ColabReaction](https://github.com/BILAB/ColabReactio
 
 If you use ColabChem in a publication, please cite ColabChem together with the methods you used. The citation information for ColabChem is in [CITATION.cff](CITATION.cff); you can copy it in APA or BibTeX format from "Cite this repository" on the right side of the GitHub repository page.
 
-- R. Chiba, ColabChem, https://github.com/RChibaChiba/ColabChem
+- R. Chiba, ColabChem, Zenodo, https://doi.org/10.5281/zenodo.24035698 (this DOI covers all versions; each version has its own DOI on the Zenodo page, v0.3.0 is 10.5281/zenodo.24035699)
 - A. H. Larsen *et al.*, *J. Phys.: Condens. Matter* **29**, 273002 (2017). (ASE, used by all notebooks)
 
 For the notebooks that use UMA (ColabUMA), also cite (not needed for ColabDFT, which does not use UMA):
