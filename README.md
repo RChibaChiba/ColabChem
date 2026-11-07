@@ -306,7 +306,6 @@ If you used the transition state search of ColabUMA TS, also cite:
 - S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 2798–2811 (2024). (Direct MaxFlux)
 - S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 7176–7187 (2024); **21**, 3513–3522 (2025). (FB-ENM, CFB-ENM)
 - E. D. Hermes, K. Sargsyan, H. N. Najm, J. Zádor, *J. Chem. Theory Comput.* **18**, 6974–6988 (2022). (Sella)
-- M. Karasawa *et al.*, *J. Chem. Inf. Model.* **65**, 11908–11914 (2025). (ColabReaction, which the TS notebook's approach is based on)
 
 If you used DFT single points (ColabUMA Opt, TS, Workflow, ColabDFT), also cite:
 
