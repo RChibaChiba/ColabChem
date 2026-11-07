@@ -2,7 +2,7 @@
 
 **English** | [日本語](README.ja.md)
 
-[Homepage (ColabChem)](https://rchibachiba.github.io/ColabChem/)
+[Homepage (ColabChem)](https://rchibachiba.github.io/ColabChem/en/)
 
 | Notebook | What it does | Open |
 |---|---|---|

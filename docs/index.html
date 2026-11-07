@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ColabChem</title>
-<meta name="description" content="Google Colab で UMA による構造最適化・スキャン・遷移状態探索と、DFT の一点計算・静電ポテンシャル表示を、フォーム入力だけで行うノートブック集。">
+<meta name="description" content="Google Colab で UMA による構造最適化・スキャン・遷移状態探索と、DFT の一点計算・静電ポテンシャル・分子軌道の表示を、フォーム入力だけで行うノートブック集。">
+<link rel="alternate" hreflang="ja" href="https://rchibachiba.github.io/ColabChem/">
+<link rel="alternate" hreflang="en" href="https://rchibachiba.github.io/ColabChem/en/">
 <style>
 :root {
   --bg: #fafaf7;
@@ -45,7 +47,10 @@ body {
 .wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
 a { color: var(--accent); }
 code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .88em; overflow-wrap: anywhere; }
-header { padding: 56px 0 36px; }
+header { padding: 20px 0 36px; }
+.lang { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 28px; font-size: .9rem; }
+.lang a, .lang span { padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
+.lang span { background: var(--tag); color: var(--tag-ink); font-weight: 600; }
 header h1 { margin: 0 0 8px; font-size: clamp(2rem, 6vw, 2.75rem); line-height: 1.2; letter-spacing: -.01em; }
 header p { margin: 0; max-width: 42em; color: var(--muted); font-size: 1.06rem; }
 h2 { margin: 48px 0 16px; font-size: 1.3rem; line-height: 1.4; }
@@ -101,8 +106,9 @@ footer p { margin: 0 0 6px; }
 <body>
 <div class="wrap">
   <header>
+    <nav class="lang" aria-label="言語"><span aria-current="page">日本語</span><a href="en/" hreflang="en" lang="en">English</a></nav>
     <h1>ColabChem</h1>
-    <p>Google Colab で開いて「すべて実行」を押し、構造ファイルを選ぶだけ。Meta の機械学習ポテンシャル UMA による構造最適化・スキャン・遷移状態探索と、DFT の一点計算・静電ポテンシャルの表示ができます。</p>
+    <p>Google Colab で開いて「すべて実行」を押し、構造ファイルを選ぶだけ。Meta の機械学習ポテンシャル UMA による構造最適化・スキャン・遷移状態探索と、DFT の一点計算・静電ポテンシャル・分子軌道（HOMO・LUMO）の表示ができます。</p>
   </header>
 
   <main>
@@ -170,7 +176,7 @@ footer p { margin: 0 0 6px; }
           <h3>ColabDFT ESP</h3>
           <p>入力した構造のまま DFT の一点計算を行い、静電ポテンシャル（ESP）を等密度面に色付けして 3D 表示します。</p>
           <dl>
-            <dt>入力</dt><dd>xyz または gjf を1つ</dd>
+            <dt>入力</dt><dd>xyz または gjf を1つ。エディタで構造を描いても入力できます</dd>
             <dt>主な出力</dt><dd>ESP の 3D 表示、ESP と電子密度の cube ファイル、面の上の最小・最大</dd>
           </dl>
           <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_ESP.ipynb" aria-label="ColabDFT ESP を Colab で開く">Colab で開く</a>
@@ -179,10 +185,10 @@ footer p { margin: 0 0 6px; }
         <article class="card">
           <div><span class="tag">トークン不要</span></div>
           <h3>ColabDFT MO</h3>
-          <p>入力した構造のまま DFT の一点計算を行い、HOMO・LUMO などの分子軌道を等値面で 3D 表示します。</p>
+          <p>入力した構造のまま DFT の一点計算を行い、HOMO・LUMO などの分子軌道を等値面で 3D 表示します。エネルギー準位図をクリックすると、ほかの軌道に切り替えられます。</p>
           <dl>
-            <dt>入力</dt><dd>xyz または gjf を1つ</dd>
-            <dt>主な出力</dt><dd>クリックできるエネルギー準位図と軌道の 3D 表示、軌道の cube ファイル、軌道のエネルギーと HOMO-LUMO ギャップ</dd>
+            <dt>入力</dt><dd>xyz または gjf を1つ。エディタで構造を描いても入力できます</dd>
+            <dt>主な出力</dt><dd>エネルギー準位図と軌道の 3D 表示、軌道の cube ファイル、軌道のエネルギーと HOMO-LUMO ギャップ</dd>
           </dl>
           <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_MO.ipynb" aria-label="ColabDFT MO を Colab で開く">Colab で開く</a>
         </article>
@@ -217,6 +223,7 @@ footer p { margin: 0 0 6px; }
         <li>ファイル選択ボタンが出たら構造ファイルを選ぶ。あとは放置できます</li>
         <li>結果を確認し、ZIP をダウンロードする</li>
       </ol>
+      <p>ColabDFT ESP と MO では、フォームの入力を「描く」にすると、ファイルの代わりに構造エディタ（JSME）が出ます。描いて「この構造で計算」を押せば、水素を付けて 3D にしてから計算します。</p>
       <div class="note">
         <strong>初回のみ（ColabDFT 以外）：</strong>
         <a href="https://huggingface.co/facebook/UMA">facebook/UMA</a> でアクセスを申請して FAIR Chemistry License v1 に同意し、承認後に Read 権限の<a href="https://huggingface.co/settings/tokens">トークン</a>を作ります。Colab の左サイドバーの🔑（シークレット）に名前 <code>HF_TOKEN</code> で登録し、ノートブックからのアクセスをオンにしてください。
