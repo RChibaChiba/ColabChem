@@ -12,6 +12,14 @@ abstract: >-
 type: software
 version: 0.3.0
 date-released: "2026-11-07"
+doi: 10.5281/zenodo.24035698
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.24035698
+    description: All versions of ColabChem (resolves to the latest version)
+  - type: doi
+    value: 10.5281/zenodo.24035699
+    description: ColabChem v0.3.0
 authors:
   - family-names: Chiba
     given-names: Ryuhei
