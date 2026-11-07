@@ -6,7 +6,8 @@ title: ColabChem
 abstract: >-
   Google Colab notebooks for structure optimization, relaxed scans and
   transition state searches with the UMA machine learning potential, and
-  DFT single point and ESP calculations with GPU4PySCF.
+  DFT single points with GPU4PySCF, including views of the electrostatic
+  potential and molecular orbitals.
 type: software
 authors:
   - family-names: Chiba
