@@ -25,9 +25,10 @@ EXTRAS = {
     },
     "dft": {
         "apt": [],
-        # cuTENSOR がないと gpu4pyscf は cupy.einsum で計算する。CuPy との版の組み合わせは
-        # gpu4pyscf 1.9.1 の requirements.txt に合わせる（pip の依存関係では cuTENSOR は入らない）
-        "pip": [("cupy-cuda12x", "cupy-cuda12x==13.4.1"), ("cutensor-cu12", "cutensor-cu12==2.2.0"),
+        # cuTENSOR がないと gpu4pyscf は cupy.einsum で計算する（pip の依存関係では cuTENSOR は入らない）。
+        # CuPy は Colab の numpy を変えない版にする。13.4.1 は numpy<2.3 で、Colab の numpy 2.4 を下げてしまい、
+        # 新しいセッションのたびに再起動が必要になる
+        "pip": [("cupy-cuda12x", "cupy-cuda12x==13.6.0"), ("cutensor-cu12", "cutensor-cu12==2.2.0"),
                 ("gpu4pyscf-cuda12x", "gpu4pyscf-cuda12x==1.9.1"), ("pyscf-dispersion", "pyscf-dispersion")],
         # (残す配布, 同じ cupy/ に入る別の配布)。共有のファイルが壊れるので、両方消してから入れ直す
         "replace": ("cupy-cuda12x", ["cupy", "cupy-cuda11x", "cupy-cuda13x"]),
