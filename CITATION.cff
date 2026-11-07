@@ -11,6 +11,7 @@ type: software
 authors:
   - family-names: Chiba
     given-names: Ryuhei
+    orcid: "https://orcid.org/0009-0002-3492-4159"
 repository-code: "https://github.com/RChibaChiba/ColabChem"
 url: "https://rchibachiba.github.io/ColabChem/"
 license: MIT
