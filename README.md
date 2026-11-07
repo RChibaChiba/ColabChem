@@ -281,6 +281,12 @@ To try code from another branch, set `COLABUMA_REF` in cell "2." to that branch 
 - `_opt.log` imitates Gaussian's format for viewing; it is not a Gaussian result. Energies (Hartree) and forces are UMA values. The threshold column holds the form's fmax converted to Hartree/Bohr, with the same ratios as Gaussian's defaults.
 - The vibrational analysis builds the Hessian from central differences of UMA forces (0.01 Å), projects out translations and rotations, and diagonalizes. Imaginary frequencies with an absolute value under 20 cm⁻¹ are treated as numerical noise and not counted (`freq.txt` also lists the values before projection).
 
+## Acknowledgments
+
+ColabChem draws heavily on [ColabReaction](https://github.com/BILAB/ColabReaction) (Bioinformation Engineering Laboratory, The University of Tokyo; [ColabReaction.net](https://colabreaction.net/)). The idea of searching for transition states on Google Colab with a machine learning potential (UMA) and Direct MaxFlux (DMF), and much of the notebook design, follow ColabReaction.
+
+- M. Karasawa, C. S. Leow, H. Yajima, S. Arai, H. Nishizaki, T. Terada, H. Sato, "ColabReaction: Accelerating Transition State Searches with Machine Learning Potentials on Google Colaboratory", *J. Chem. Inf. Model.* **65**, 11908–11914 (2025). https://doi.org/10.1021/acs.jcim.5c02398
+
 ## Citation
 
 If you use ColabChem in a publication, please cite ColabChem together with the methods you used. The citation information for ColabChem is in [CITATION.cff](CITATION.cff); you can copy it in APA or BibTeX format from "Cite this repository" on the right side of the GitHub repository page.
@@ -300,6 +306,7 @@ If you used the transition state search of ColabUMA TS, also cite:
 - S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 2798–2811 (2024). (Direct MaxFlux)
 - S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 7176–7187 (2024); **21**, 3513–3522 (2025). (FB-ENM, CFB-ENM)
 - E. D. Hermes, K. Sargsyan, H. N. Najm, J. Zádor, *J. Chem. Theory Comput.* **18**, 6974–6988 (2022). (Sella)
+- M. Karasawa *et al.*, *J. Chem. Inf. Model.* **65**, 11908–11914 (2025). (ColabReaction, which the TS notebook's approach is based on)
 
 If you used DFT single points (ColabUMA Opt, TS, Workflow, ColabDFT), also cite:
 

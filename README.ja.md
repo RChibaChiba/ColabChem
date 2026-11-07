@@ -279,6 +279,12 @@ Colab のタイムアウトについて：
 - `_opt.log` は表示用に Gaussian の書式をまねたファイルで、Gaussian で計算した結果ではありません。エネルギー（Hartree）と力は UMA の値です。収束判定の閾値欄には、フォームの fmax を Hartree/Bohr に換算した値を、Gaussian の既定値と同じ比率で書いています。
 - 振動計算は UMA の力の中心差分（0.01 Å）でヘシアンを作り、並進・回転を射影で取り除いてから対角化します。絶対値が 20 cm⁻¹ 未満の虚振動は数値誤差として本数に数えません（`freq.txt` には射影前の値も載ります）。
 
+## 謝辞・参考にしたもの
+
+ColabChem は、[ColabReaction](https://github.com/BILAB/ColabReaction)（東京大学 生物情報工学研究室、[ColabReaction.net](https://colabreaction.net/)）を大いに参考にしています。Google Colab で機械学習ポテンシャル（UMA）と Direct MaxFlux（DMF）を使って遷移状態を探すという考え方や、ノートの構成の多くは ColabReaction にならったものです。
+
+- M. Karasawa, C. S. Leow, H. Yajima, S. Arai, H. Nishizaki, T. Terada, H. Sato, "ColabReaction: Accelerating Transition State Searches with Machine Learning Potentials on Google Colaboratory", *J. Chem. Inf. Model.* **65**, 11908–11914 (2025). https://doi.org/10.1021/acs.jcim.5c02398
+
 ## 引用
 
 論文で使う場合は、ColabChem に加えて、使った手法の文献も引用してください。ColabChem の引用情報は [CITATION.cff](CITATION.cff) にあり、GitHub のリポジトリページ右側の「Cite this repository」から APA や BibTeX の形式でコピーできます。
@@ -298,6 +304,7 @@ ColabUMA TS で遷移状態探索を使った場合は、次も引用してく�
 - S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 2798–2811 (2024).（Direct MaxFlux）
 - S.-i. Koda and S. Saito, *J. Chem. Theory Comput.* **20**, 7176–7187 (2024); **21**, 3513–3522 (2025).（FB-ENM、CFB-ENM）
 - E. D. Hermes, K. Sargsyan, H. N. Najm, J. Zádor, *J. Chem. Theory Comput.* **18**, 6974–6988 (2022).（Sella）
+- M. Karasawa *et al.*, *J. Chem. Inf. Model.* **65**, 11908–11914 (2025).（ColabReaction。TS ノートの進め方の元になったもの）
 
 DFT の一点計算（ColabUMA Opt、TS、Workflow、ColabDFT）を使った場合は、次も引用してください。
 
