@@ -70,7 +70,7 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 | 最大ステップ数 | 500 | |
 | 振動計算 | オフ | オンなら最適化後に虚振動の有無を確認 |
 | DFT 一点計算 | オン | 最適化した構造で DFT のエネルギーを計算する（GPU4PySCF、密度フィッティング）。UMA の構造のままで、DFT で最適化し直すものではない |
-| 汎関数 / 基底関数 | ωB97M-V / def2-SVP | ωB97M-V/def2-TZVPD が UMA（OMol25）の学習データと同じ計算レベル。T4 では def2-TZVPD は時間がかかる |
+| 汎関数 / 基底関数 | B3LYP-D3(BJ) / def2-SVP | 既定は計算の速さを優先。ωB97M-V/def2-TZVPD が UMA（OMol25）の学習データと同じ計算レベルだが、T4 では時間がかかる |
 
 xyzファイルは1ファイル1構造です。複数の構造が入っている場合は先頭だけを使います。サンプルは [examples/example.xyz](examples/example.xyz) と [examples/example.gjf](examples/example.gjf) にあります。
 
@@ -136,7 +136,7 @@ Gaussianの入力ファイル（拡張子 .gjf / .com / .gjc）からは**構造
 | `ts_exact_hessian` | オン | Sella の最初のヘシアンを数値微分で作る（力の計算 6N 回） |
 | `check_connection` | オン | 簡易IRC |
 | `run_dft` | オン | DFT の一点計算 |
-| `dft_functional` / `dft_basis` | ωB97M-V / def2-SVP | ωB97M-V/def2-TZVPD が UMA（OMol25）の学習データと同じ計算レベル。T4 では def2-TZVPD は時間がかかる |
+| `dft_functional` / `dft_basis` | B3LYP-D3(BJ) / def2-SVP | 既定は計算の速さを優先。ωB97M-V/def2-TZVPD が UMA（OMol25）の学習データと同じ計算レベルだが、T4 では時間がかかる |
 | `gaussian_route` | `# opt=(ts,calcfc,noeigentest) freq b3lyp/def2svp empiricaldispersion=gd3bj` | ZIP に入れる Gaussian 用 gjf のルート行 |
 
 | ファイル | 内容 |
@@ -169,7 +169,7 @@ Colab ではノートごとに別のセッション（別のマシン）が割�
 | 項目 | 既定値 | 説明 |
 |---|---|---|
 | 電荷 / スピン多重度 | 0 / 1 | gjf に書かれた値ではなくフォームの値を使う。多重度1は RKS、それ以外は UKS |
-| 汎関数 | ωB97M-V | ωB97M-V / B3LYP-D3(BJ) / PBE0-D3(BJ) / M06-2X / r2SCAN-D4 |
+| 汎関数 | B3LYP-D3(BJ) | ωB97M-V / B3LYP-D3(BJ) / PBE0-D3(BJ) / M06-2X / r2SCAN-D4 |
 | 基底関数 | def2-SVP | def2-SVP / def2-TZVP / def2-TZVPD |
 
 xyz に複数の構造が入っている場合は先頭だけを計算します。扱える元素は H〜Rn（原子番号1〜86）です。
@@ -246,6 +246,8 @@ DFT の一点計算（ColabUMA Opt、TS、Workflow、ColabSPE）を使った場�
 | [Ipopt](https://github.com/coin-or/Ipopt)（apt の `coinor-libipopt-dev`、3.11 系） | TS、Workflow | CPL-1.0（3.13 以降は EPL-2.0） |
 | MUMPS（Ipopt が使う線形ソルバー。apt で一緒に入る） | TS、Workflow | CeCILL-C |
 | [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)（`gpu4pyscf-cuda12x`、`gpu4pyscf-libxc-cuda12x`） | Opt、TS、Workflow（DFT）、ColabSPE | Apache-2.0 |
+| [CuPy](https://cupy.dev/)（`cupy-cuda12x`） | Opt、TS、Workflow（DFT）、ColabSPE | MIT |
+| [cuTENSOR](https://developer.nvidia.com/cutensor)（`cutensor-cu12`） | Opt、TS、Workflow（DFT）、ColabSPE | NVIDIA のプロプライエタリライセンス |
 | [PySCF](https://github.com/pyscf/pyscf) | Opt、TS、Workflow（DFT）、ColabSPE | Apache-2.0 |
 | [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt、TS、Workflow（DFT）、ColabSPE | Apache-2.0 |
 

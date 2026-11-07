@@ -25,7 +25,12 @@ EXTRAS = {
     },
     "dft": {
         "apt": [],
-        "pip": [("gpu4pyscf-cuda12x", "gpu4pyscf-cuda12x==1.9.1"), ("pyscf-dispersion", "pyscf-dispersion")],
+        # cuTENSOR がないと gpu4pyscf は cupy.einsum で計算する。CuPy との版の組み合わせは
+        # gpu4pyscf 1.9.1 の requirements.txt に合わせる（pip の依存関係では cuTENSOR は入らない）
+        "pip": [("cupy-cuda12x", "cupy-cuda12x==13.4.1"), ("cutensor-cu12", "cutensor-cu12==2.2.0"),
+                ("gpu4pyscf-cuda12x", "gpu4pyscf-cuda12x==1.9.1"), ("pyscf-dispersion", "pyscf-dispersion")],
+        # (残す配布, 同じ cupy/ に入る別の配布)。共有のファイルが壊れるので、両方消してから入れ直す
+        "replace": ("cupy-cuda12x", ["cupy", "cupy-cuda11x", "cupy-cuda13x"]),
     },
 }
 
@@ -81,9 +86,20 @@ def _pip(args, what):
                             "「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
 
 
+def _pip_uninstall(pkgs, what):
+    r = subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "-q", *pkgs], capture_output=True, text=True)
+    if r.returncode != 0:
+        print("\n".join(r.stderr.strip().splitlines()[-15:]))
+        raise ColabUMAError(f"{what}のインストールの準備に失敗しました（上にpipのメッセージを表示しています）。",
+                            "「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
+
+
 def _install_extra(name):
     spec = EXTRAS[name]
-    missing = [pin for pkg, pin in spec["pip"] if installed(pkg) is None or ("==" in pin and installed(pkg) != pin.split("==")[1])]
+    keep, others = spec.get("replace", (None, []))
+    others = [pkg for pkg in others if installed(pkg)]
+    missing = [pin for pkg, pin in spec["pip"]
+               if (others and pkg == keep) or installed(pkg) is None or ("==" in pin and installed(pkg) != pin.split("==")[1])]
     if not missing:
         return False
     label = {"structure": "構造の読み込み（ASE）", "ts": "遷移状態探索（DMF・Sella）", "dft": "DFT（gpu4pyscf）"}[name]
@@ -101,7 +117,14 @@ def _install_extra(name):
             print("\n".join(r.stderr.strip().splitlines()[-15:]))
             raise ColabUMAError(f"{label}に必要なシステムのライブラリ（{' '.join(spec['apt'])}）を入れられませんでした。",
                                 "しばらく待ってからもう一度実行してください。")
+    numpy_before = installed("numpy")
+    if others:
+        _pip_uninstall(others + ([keep] if installed(keep) else []), label)
     _pip(missing, label)
+    # ノートは先に numpy を読み込んでいる。CuPy の条件で numpy の版が変わることがある
+    if "cupy" in sys.modules or ("numpy" in sys.modules and installed("numpy") != numpy_before):
+        raise ColabUMAError("インストールは完了しましたが、読み込み済みのライブラリを入れ替えるためセッションの再起動が必要です。",
+                            "「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
     return True
 
 
@@ -222,7 +245,7 @@ def software_lines():
     import numpy as np
 
     lines = [f"Python {platform.python_version()}", f"ase {ase.__version__}"]
-    for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "pyscf"):
+    for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "cupy-cuda12x", "cutensor-cu12", "pyscf"):
         if installed(pkg):
             lines.append(f"{pkg} {installed(pkg)}")
     try:
