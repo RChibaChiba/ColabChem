@@ -6,17 +6,17 @@
 
 | Notebook | What it does | Open |
 |---|---|---|
-| ColabUMA Opt | Geometry optimization → DFT single point | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Opt.ipynb) |
-| ColabUMA Scan | Relaxed scan (bond length, angle, dihedral) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Scan.ipynb) |
-| ColabUMA TS | Transition state search (DMF → Sella → DFT single point) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_TS.ipynb) |
-| ColabUMA Workflow | Optimization → scan → transition state in one session | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow.ipynb) |
-| ColabDFT SPE | DFT single point only (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE.ipynb) |
-| ColabDFT ESP | DFT single point and 3D view of the electrostatic potential (ESP) (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_ESP.ipynb) |
-| ColabDFT MO | DFT single point and 3D view of molecular orbitals such as HOMO and LUMO (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_MO.ipynb) |
+| ColabUMA Opt | Geometry optimization → DFT single point | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Opt_en.ipynb) |
+| ColabUMA Scan | Relaxed scan (bond length, angle, dihedral) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Scan_en.ipynb) |
+| ColabUMA TS | Transition state search (DMF → Sella → DFT single point) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_TS_en.ipynb) |
+| ColabUMA Workflow | Optimization → scan → transition state in one session | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow_en.ipynb) |
+| ColabDFT SPE | DFT single point only (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE_en.ipynb) |
+| ColabDFT ESP | DFT single point and 3D view of the electrostatic potential (ESP) (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_ESP_en.ipynb) |
+| ColabDFT MO | DFT single point and 3D view of molecular orbitals such as HOMO and LUMO (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_MO_en.ipynb) |
 
 Google Colab notebooks for geometry optimization, relaxed scans and transition state searches of molecules with Meta's machine learning potential **UMA**. Open a notebook in Colab and choose "Run all". You only need a structure (xyz or Gaussian gjf), the charge and the spin multiplicity.
 
-The notebooks' forms, messages and logs are in English. Error messages also show a Japanese translation. The explanation at the top of each notebook is in Japanese; this README covers the same content in English.
+Each notebook comes in two versions with the same code: the English one (`<name>_en.ipynb`, linked from this README) and the Japanese one (`<name>.ipynb`), which differ only in the explanation at the top. Forms, messages and logs are in English in both; error messages also show a Japanese translation.
 
 <!-- TODO: add a screenshot (e.g. docs/screenshot.png) -->
 
@@ -97,7 +97,7 @@ From a Gaussian input file (.gjf / .com / .gjc), **only the structure** is read.
 
 ## ColabUMA Scan
 
-[ColabUMA_Scan.ipynb](ColabUMA_Scan.ipynb) runs a relaxed scan: it moves a bond length, angle or dihedral in fixed steps and optimizes the remaining degrees of freedom. It corresponds to the `S` entry of Gaussian's `opt=modredundant`. Setup and usage are the same as for ColabUMA Opt.
+[ColabUMA_Scan_en.ipynb](ColabUMA_Scan_en.ipynb) runs a relaxed scan: it moves a bond length, angle or dihedral in fixed steps and optimizes the remaining degrees of freedom. It corresponds to the `S` entry of Gaussian's `opt=modredundant`. Setup and usage are the same as for ColabUMA Opt.
 
 | Item | Default | Description |
 |---|---|---|
@@ -124,7 +124,7 @@ If you don't know the atom numbers, run once: "5. Prepare the structures" shows 
 
 ## ColabUMA TS
 
-[ColabUMA_TS.ipynb](ColabUMA_TS.ipynb) searches for the transition state (TS) of a reaction.
+[ColabUMA_TS_en.ipynb](ColabUMA_TS_en.ipynb) searches for the transition state (TS) of a reaction.
 
 1. **DMF** (direct MaxFlux method, [PyDMF](https://github.com/shin1koda/dmf)) optimizes the reaction path between the reactant and the product, and the highest point on the path becomes the TS guess (the initial path is made with FB-ENM)
 2. **Sella** optimizes it to a first-order saddle point. The initial Hessian is a numerical derivative of UMA
@@ -164,7 +164,7 @@ The TS found is a TS on the UMA potential energy surface. The DFT single points 
 
 Colab gives each notebook its own session (its own machine). If you go ColabUMA_Opt → ColabUMA_Scan → ColabUMA_TS in separate notebooks, you redo the install and the model download each time.
 
-[ColabUMA_Workflow.ipynb](ColabUMA_Workflow.ipynb) runs **optimization → scan → transition state → DFT single points** in a single session. Each stage passes its structures to the next in memory.
+[ColabUMA_Workflow_en.ipynb](ColabUMA_Workflow_en.ipynb) runs **optimization → scan → transition state → DFT single points** in a single session. Each stage passes its structures to the next in memory.
 
 - The optimized structure becomes the reactant and the structure optimized after the scan becomes the product for DMF (set `ts_source` to "Sella from the scan maximum" to skip DMF and start from the highest point of the scan)
 - To redo only part of the run, edit the form and run from that cell down (**Runtime → Run after**). The install and the model load are skipped
@@ -175,7 +175,7 @@ Colab gives each notebook its own session (its own machine). If you go ColabUMA_
 
 ## ColabDFT SPE
 
-[ColabDFT_SPE.ipynb](ColabDFT_SPE.ipynb) runs only a DFT single point with GPU4PySCF, on the input structure as it is. It does not optimize the structure. It does not use UMA, so you don't need the Hugging Face token from [Before you start](#before-you-start-first-time-only), and fairchem is not installed.
+[ColabDFT_SPE_en.ipynb](ColabDFT_SPE_en.ipynb) runs only a DFT single point with GPU4PySCF, on the input structure as it is. It does not optimize the structure. It does not use UMA, so you don't need the Hugging Face token from [Before you start](#before-you-start-first-time-only), and fairchem is not installed.
 
 | Item | Default | Description |
 |---|---|---|
@@ -193,7 +193,7 @@ If an xyz holds several structures, only the first is computed. Supported elemen
 
 ## ColabDFT ESP
 
-[ColabDFT_ESP.ipynb](ColabDFT_ESP.ipynb) runs a DFT single point on the input structure as it is, and shows the electrostatic potential (ESP) colored on an electron density isosurface in 3D. Red is negative, blue is positive. It does not optimize the structure, and needs neither UMA nor a token. The charge, multiplicity, functional and basis set items are the same as in [ColabDFT SPE](#colabdft-spe).
+[ColabDFT_ESP_en.ipynb](ColabDFT_ESP_en.ipynb) runs a DFT single point on the input structure as it is, and shows the electrostatic potential (ESP) colored on an electron density isosurface in 3D. Red is negative, blue is positive. It does not optimize the structure, and needs neither UMA nor a token. The charge, multiplicity, functional and basis set items are the same as in [ColabDFT SPE](#colabdft-spe).
 
 | Item | Default | Description |
 |---|---|---|
@@ -212,7 +212,7 @@ If an xyz holds several structures, only the first is computed. Supported elemen
 
 ## ColabDFT MO
 
-[ColabDFT_MO.ipynb](ColabDFT_MO.ipynb) runs a DFT single point on the input structure as it is, and shows molecular orbitals (Kohn–Sham orbitals) such as HOMO and LUMO as positive and negative isosurfaces in 3D. Blue is positive, red is negative (the overall sign of an orbital has no meaning, so the colors can swap). An energy level diagram (occupations shown as ↑↓) sits next to the 3D view; click a level to show that orbital. Orbitals not given in the form are computed on click by the Colab runtime (only while it is connected). It also shows the HOMO and LUMO energies, the gap, and a table of the orbital energies near HOMO and LUMO. Only the orbitals given in the form are written as cube files to the ZIP. For open shells, α and β orbitals are shown separately. It does not optimize the structure, and needs neither UMA nor a token. The charge, multiplicity, functional and basis set items are the same as in [ColabDFT SPE](#colabdft-spe).
+[ColabDFT_MO_en.ipynb](ColabDFT_MO_en.ipynb) runs a DFT single point on the input structure as it is, and shows molecular orbitals (Kohn–Sham orbitals) such as HOMO and LUMO as positive and negative isosurfaces in 3D. Blue is positive, red is negative (the overall sign of an orbital has no meaning, so the colors can swap). An energy level diagram (occupations shown as ↑↓) sits next to the 3D view; click a level to show that orbital. Orbitals not given in the form are computed on click by the Colab runtime (only while it is connected). It also shows the HOMO and LUMO energies, the gap, and a table of the orbital energies near HOMO and LUMO. Only the orbitals given in the form are written as cube files to the ZIP. For open shells, α and β orbitals are shown separately. It does not optimize the structure, and needs neither UMA nor a token. The charge, multiplicity, functional and basis set items are the same as in [ColabDFT SPE](#colabdft-spe).
 
 | Item | Default | Description |
 |---|---|---|
@@ -270,7 +270,9 @@ Notebook cells only take the form values and call functions. The calculations li
 
 To try code from another branch, set `COLABUMA_REF` in cell "2." to that branch name (restart the session if the code was already fetched). If you clone the repository locally and open a notebook from it, the `colabuma` in that folder is used.
 
-The notebooks normally use the latest code on main. To reproduce the version used in a paper, set `COLABUMA_REF` to a release tag (for example `v0.3.0`). The version and commit used are written under "ソフトウェア" (software) in `log.txt`.
+The notebooks normally use the latest code on main. To reproduce the version used in a paper, set `COLABUMA_REF` to a release tag (for example `v0.3.0`). The version and commit used are written under "[Software]" in `log.txt`.
+
+The Japanese and English versions of a notebook share the same code cells and differ only in the first (explanation) cell. When changing a code cell, change it in both files.
 
 ## Notes
 

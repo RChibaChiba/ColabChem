@@ -90,7 +90,8 @@ def _make_mol(atoms, charge, multiplicity, basis):
     import pyscf
 
     return pyscf.M(atom=[(s, tuple(p)) for s, p in zip(atoms.get_chemical_symbols(), atoms.positions)],
-                   basis=basis, ecp=basis if atoms.numbers.max() > 36 else None,  # def2 の ECP は Rb 以降
+                   basis=basis, ecp={s: basis for s, z in zip(atoms.get_chemical_symbols(), atoms.numbers) if z > 36} or None,
+                   # def2 の ECP は Rb 以降。ほかの元素にも渡すと「ECP not found」の警告が元素ごとに出る
                    charge=int(charge), spin=int(multiplicity) - 1, unit="Angstrom", verbose=0)
 
 
