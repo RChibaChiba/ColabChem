@@ -1,0 +1,163 @@
+cff-version: 1.2.0
+message: >-
+  If you use ColabChem, please cite it as below, together with the
+  methods it runs (see references and the README).
+title: ColabChem
+abstract: >-
+  Google Colab notebooks for structure optimization, relaxed scans and
+  transition state searches with the UMA machine learning potential, and
+  DFT single point and ESP calculations with GPU4PySCF.
+type: software
+authors:
+  - family-names: Chiba
+    given-names: Ryuhei
+    orcid: "https://orcid.org/0009-0002-3492-4159"
+repository-code: "https://github.com/RChibaChiba/ColabChem"
+url: "https://rchibachiba.github.io/ColabChem/"
+license: MIT
+keywords:
+  - computational chemistry
+  - machine learning interatomic potential
+  - UMA
+  - transition state
+  - DFT
+  - Google Colab
+references:
+  - type: article
+    title: "UMA: A Family of Universal Models for Atoms"
+    authors:
+      - family-names: Wood
+        given-names: Brandon M.
+      - name: et al.
+    year: 2025
+    identifiers:
+      - type: other
+        value: "arXiv:2506.23971"
+  - type: article
+    title: "The Open Molecules 2025 (OMol25) Dataset, Evaluations, and Models"
+    authors:
+      - family-names: Levine
+        given-names: Daniel S.
+      - name: et al.
+    year: 2025
+    identifiers:
+      - type: other
+        value: "arXiv:2505.08762"
+  - type: software
+    title: fairchem
+    authors:
+      - name: FAIR Chemistry
+    repository-code: "https://github.com/facebookresearch/fairchem"
+  - type: article
+    title: "The atomic simulation environment—a Python library for working with atoms"
+    authors:
+      - family-names: Larsen
+        given-names: Ask Hjorth
+      - name: et al.
+    journal: "Journal of Physics: Condensed Matter"
+    volume: 29
+    start: 273002
+    year: 2017
+    doi: 10.1088/1361-648X/aa680e
+  - type: article
+    title: >-
+      PyDMF: A Python package for variational double-ended reaction-path
+      and transition-state optimization
+    authors:
+      - family-names: Koda
+        given-names: Shin-ichi
+      - family-names: Saito
+        given-names: Shinji
+    journal: Journal of Open Source Software
+    volume: 11
+    start: 10379
+    year: 2026
+    doi: 10.21105/joss.10379
+    repository-code: "https://github.com/shin1koda/dmf"
+  - type: article
+    title: >-
+      Locating Transition States by Variational Reaction Path Optimization
+      with an Energy-Derivative-Free Objective Function
+    authors:
+      - family-names: Koda
+        given-names: Shin-ichi
+      - family-names: Saito
+        given-names: Shinji
+    journal: Journal of Chemical Theory and Computation
+    volume: 20
+    start: 2798
+    end: 2811
+    year: 2024
+    doi: 10.1021/acs.jctc.3c01246
+  - type: article
+    title: >-
+      Flat-Bottom Elastic Network Model for Generating Improved Plausible
+      Reaction Paths
+    authors:
+      - family-names: Koda
+        given-names: Shin-ichi
+      - family-names: Saito
+        given-names: Shinji
+    journal: Journal of Chemical Theory and Computation
+    volume: 20
+    start: 7176
+    end: 7187
+    year: 2024
+    doi: 10.1021/acs.jctc.4c00792
+  - type: article
+    title: >-
+      Correlated Flat-Bottom Elastic Network Model for Improved Bond
+      Rearrangement in Reaction Paths
+    authors:
+      - family-names: Koda
+        given-names: Shin-ichi
+      - family-names: Saito
+        given-names: Shinji
+    journal: Journal of Chemical Theory and Computation
+    volume: 21
+    start: 3513
+    end: 3522
+    year: 2025
+    doi: 10.1021/acs.jctc.4c01549
+  - type: article
+    title: >-
+      Sella, an Open-Source Automation-Friendly Molecular Saddle Point
+      Optimizer
+    authors:
+      - family-names: Hermes
+        given-names: Eric D.
+      - family-names: Sargsyan
+        given-names: Khachik
+      - family-names: Najm
+        given-names: Habib N.
+      - family-names: Zádor
+        given-names: Judit
+    journal: Journal of Chemical Theory and Computation
+    volume: 18
+    start: 6974
+    end: 6988
+    year: 2022
+    doi: 10.1021/acs.jctc.2c00395
+  - type: article
+    title: "Recent developments in the PySCF program package"
+    authors:
+      - family-names: Sun
+        given-names: Qiming
+      - name: et al.
+    journal: The Journal of Chemical Physics
+    volume: 153
+    start: "024109"
+    year: 2020
+    doi: 10.1063/5.0006074
+  - type: article
+    title: >-
+      Enhancing GPU-acceleration in the Python-based Simulations of
+      Chemistry Framework
+    authors:
+      - family-names: Wu
+        given-names: Xiaojie
+      - name: et al.
+    year: 2024
+    identifiers:
+      - type: other
+        value: "arXiv:2404.09452"

@@ -2,6 +2,7 @@
 
 UMA で求めた構造や入力の構造で DFT のエネルギーを計算する。反応物・TS・生成物なら活性化エネルギーも比べる。
 """
+import math
 import time
 from dataclasses import dataclass
 
@@ -20,6 +21,18 @@ FUNCTIONALS = {
 }
 BASIS_SETS = ["def2-SVP", "def2-TZVP", "def2-TZVPD"]
 MAX_Z = 86  # def2 基底関数があるのは H〜Rn
+
+GB = 1e9
+# UMA のノートで DFT 一点計算にかける時間の既定値（分）。全構造の合計
+TIME_LIMIT_MIN = 60
+# Colab の無料版でランタイムが続く最長時間の目安（時間）と、そのあとの保存に残しておく時間（分）
+COLAB_MAX_HOURS = 12
+SAVE_MARGIN_MIN = 15
+# gpu4pyscf は 3中心積分（cderi）が空きの 40% に収まれば GPU に、収まらなければ CPU のメモリに置く
+GPU_CDERI_FRACTION = 0.4
+# cderi を CPU のメモリに置くとき、空きのこの割合を超えたら危ない（ほかの配列や Python の分も要る）
+HOST_WARN_FRACTION = 0.3
+HOST_DANGER_FRACTION = 0.7
 
 
 @dataclass
@@ -45,6 +58,19 @@ def parse_method(functional, basis):
     return key, basis
 
 
+class DFTSkipped(Exception):
+    """DFT を最後まで計算できなかったとき（メモリ不足・時間切れなど）。done は計算が終わった構造の結果。"""
+    def __init__(self, reason, hint="", done=None):
+        super().__init__(reason)
+        self.reason = reason
+        self.hint = hint
+        self.done = done or []
+
+
+class _TimeUp(Exception):
+    pass
+
+
 def _backend():
     try:
         import cupy  # noqa: F401
@@ -58,38 +84,163 @@ def _backend():
         return "pyscf (CPU)", cdft
 
 
-def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100, keep_density=False):
-    """1構造の DFT エネルギー（Hartree）。dict を返す。keep_density なら mol と全電子の密度行列（NumPy）も入れる。"""
+def _make_mol(atoms, charge, multiplicity, basis):
     import pyscf
 
+    return pyscf.M(atom=[(s, tuple(p)) for s, p in zip(atoms.get_chemical_symbols(), atoms.positions)],
+                   basis=basis, ecp=basis if atoms.numbers.max() > 36 else None,  # def2 の ECP は Rb 以降
+                   charge=int(charge), spin=int(multiplicity) - 1, unit="Angstrom", verbose=0)
+
+
+def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100, keep_density=False, deadline=None):
+    """1構造の DFT エネルギー（Hartree）。dict を返す。keep_density なら mol と全電子の密度行列（NumPy）も入れる。
+
+    deadline（time.time() の値）を過ぎたら、SCF の反復の区切りで _TimeUp を投げて止める。
+    """
     name, mod = _backend()
     xc, disp = FUNCTIONALS[functional]
-    mol = pyscf.M(atom=[(s, tuple(p)) for s, p in zip(atoms.get_chemical_symbols(), atoms.positions)],
-                  basis=basis, ecp=basis if atoms.numbers.max() > 36 else None,  # def2 の ECP は Rb 以降
-                  charge=int(charge), spin=int(multiplicity) - 1, unit="Angstrom", verbose=0)
+    mol = _make_mol(atoms, charge, multiplicity, basis)
     mf = (mod.RKS(mol, xc=xc) if multiplicity == 1 else mod.UKS(mol, xc=xc)).density_fit()
     if disp:
         mf.disp = disp
     mf.max_cycle = max_cycle
+    if deadline is not None:
+        def _check_time(envs):
+            if time.time() > deadline:
+                raise _TimeUp()
+        mf.callback = _check_time
     t0 = time.time()
-    e = float(mf.kernel())
-    out = {"energy": e, "converged": bool(mf.converged), "seconds": time.time() - t0, "backend": name,
-           "nao": int(mol.nao)}
-    if keep_density:
-        dm = mf.make_rdm1()
-        dm = dm.get() if hasattr(dm, "get") else dm  # GPU の配列を NumPy に
-        dm = dm.sum(axis=0) if dm.ndim == 3 else dm  # UKS は α + β
-        out.update(mol=mol, dm=(dm + dm.T) / 2)
-    if name.startswith("gpu"):
-        import cupy
-
+    try:
+        e = float(mf.kernel())
+        out = {"energy": e, "converged": bool(mf.converged), "seconds": time.time() - t0, "backend": name,
+               "nao": int(mol.nao)}
+        if keep_density:
+            dm = mf.make_rdm1()
+            dm = dm.get() if hasattr(dm, "get") else dm  # GPU の配列を NumPy に
+            dm = dm.sum(axis=0) if dm.ndim == 3 else dm  # UKS は α + β
+            out.update(mol=mol, dm=(dm + dm.T) / 2)
+    finally:
         del mf
-        cupy.get_default_memory_pool().free_all_blocks()
+        _free_gpu()
     return out
 
 
-def run(points, charge, multiplicity, functional, basis, keep_density=False):
-    """points は [(名前, atoms), ...]。各構造の一点計算の結果を返す。"""
+def _free_gpu():
+    try:
+        import cupy
+
+        cupy.get_default_memory_pool().free_all_blocks()
+        cupy.get_default_pinned_memory_pool().free_all_blocks()
+    except Exception:
+        pass
+
+
+def _gb(n):
+    return f"{n / GB:.1f} GB" if n >= 0.95 * GB else f"{n / 1e6:.0f} MB"
+
+
+def _host_available():
+    """CPU のメモリの空き（バイト）。分からなければ None。"""
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) * 1024
+    except OSError:
+        pass
+    return None
+
+
+def _gpu_available():
+    """GPU のメモリの空き（バイト。CuPy が確保して使っていない分も含む）。GPU がなければ None。"""
+    try:
+        import cupy
+
+        pool = cupy.get_default_memory_pool()
+        return cupy.cuda.runtime.memGetInfo()[0] + pool.total_bytes() - pool.used_bytes()
+    except Exception:
+        return None
+
+
+def _is_out_of_memory(e):
+    if isinstance(e, MemoryError):
+        return True
+    text = f"{type(e).__name__} {e}".lower()
+    return any(k in text for k in ("outofmemory", "out of memory", "memoryallocation", "not enough gpu memory"))
+
+
+def estimate_memory(points, charge, multiplicity, basis):
+    """いちばん大きい構造の基底関数の数と、密度フィッティングの 3中心積分（cderi）の大きさ（バイト）。
+
+    cderi は (補助基底の数) × nao(nao+1)/2 の倍精度の配列。gpu4pyscf は小さい積分を省くので、実際はこれより小さい
+    ことが多い（大きな分子ほど差が大きい）。
+    """
+    from pyscf import df
+
+    atoms = max((a for _, a in points), key=len)
+    mol = _make_mol(atoms, charge, multiplicity, basis)
+    auxmol = df.addons.make_auxmol(mol, df.addons.make_auxbasis(mol))
+    nao, naux = int(mol.nao), int(auxmol.nao)
+    return {"nao": nao, "naux": naux, "cderi": naux * nao * (nao + 1) // 2 * 8, "n_atoms": len(atoms)}
+
+
+def check_memory(points, charge, multiplicity, basis, quiet=False):
+    """DFT のメモリが足りそうかを見積もる。("ok" | "warn" | "danger", 説明, 対処法, 見積もり) を返す。
+
+    gpu4pyscf は cderi を GPU に置けなければ CPU のメモリに置く。CPU のメモリまで足りなくなると、Colab では
+    エラーにならずにカーネルごと落ちて、それまでの結果も消えるので、その手前で止められるようにする。
+    quiet でなければ、"warn" と "danger" のときに注意を表示する。
+    """
+    est = estimate_memory(points, charge, multiplicity, basis)
+    need = est["cderi"]
+    gpu = _gpu_available() if _backend()[0].startswith("gpu") else None
+    host = _host_available()
+    size = (f"{est['n_atoms']} 原子、基底関数 {est['nao']} 個、補助基底 {est['naux']} 個で、"
+            f"3中心積分は最大 約 {_gb(need)}")
+    free = "、".join(x for x in (f"GPU {_gb(gpu)}" if gpu is not None else "",
+                                 f"CPU {_gb(host)}" if host is not None else "") if x)
+    hint = "基底関数を小さくする（def2-SVP）か、Colab Pro の大容量 RAM・A100 などのランタイムを使ってください。"
+    if gpu is not None and need < GPU_CDERI_FRACTION * gpu:
+        level, msg = "ok", f"{size}。GPU のメモリに収まる見込みです（空き {free}）。"
+    elif host is None or need < HOST_WARN_FRACTION * host:
+        level = "ok" if gpu is None else "warn"
+        msg = (f"{size}。GPU のメモリに収まらないので CPU のメモリに置きます（空き {free}）。"
+               "計算が遅くなります。" if gpu is not None else f"{size}（空き {free}）。")
+    elif need < HOST_DANGER_FRACTION * host:
+        level, msg = "warn", (f"{size}です。メモリの空き（{free}）に対してぎりぎりです。"
+                              "途中でメモリが足りなくなると、Colab のランタイムごと落ちることがあります。")
+    else:
+        level, msg = "danger", (f"{size}です。メモリの空き（{free}）を超えそうです。"
+                                "このまま計算すると、Colab のランタイムごと落ちる可能性が高いです。")
+    if gpu is None and level == "danger":
+        # CPU の PySCF は、cderi がメモリに収まらなければディスクに置くので落ちない。ただしとても遅い
+        level, msg = "warn", f"{size}です。CPU のメモリに収まらないのでディスクを使います（空き {free}）。とても遅くなります。"
+    if not quiet and level != "ok":
+        warn(f"DFT のメモリ：{msg}", hint)
+    return level, msg, hint, est
+
+
+def time_budget(limit_min):
+    """DFT にかけてよい秒数。limit_min が 0 以下なら上限なし。Colab ではランタイムの最長時間の目安も超えない。"""
+    budget = limit_min * 60 if limit_min and limit_min > 0 else math.inf
+    try:
+        import google.colab  # noqa: F401
+
+        with open("/proc/uptime") as f:
+            uptime = float(f.read().split()[0])  # Colab ではランタイムの VM が起動してからの秒数
+        budget = min(budget, COLAB_MAX_HOURS * 3600 - uptime - SAVE_MARGIN_MIN * 60)
+    except (ImportError, OSError, ValueError):
+        pass
+    return max(budget, 0.0)
+
+
+def run(points, charge, multiplicity, functional, basis, keep_density=False, time_limit_min=0, fallback=False):
+    """points は [(名前, atoms), ...]。各構造の一点計算の結果を返す。
+
+    time_limit_min：全構造の合計の時間の上限（分）。0 なら上限なし（Colab ではランタイムの最長時間の目安まで）。
+    fallback：メモリ不足・時間切れのとき、ColabUMAError ではなく DFTSkipped を投げる（UMA のノートで DFT だけ飛ばす）。
+    メモリが明らかに足りない見込みのときも、fallback なら計算を始めずに飛ばす。そうでなければ注意だけ出して計算する。
+    """
     functional, basis = parse_method(functional, basis)
     if max(int(a.numbers.max()) for _, a in points) > MAX_Z:
         raise ColabUMAError("def2 基底関数がない元素が含まれています。", "扱えるのは H〜Rn（原子番号1〜86）です。")
@@ -103,18 +254,46 @@ def run(points, charge, multiplicity, functional, basis, keep_density=False):
             torch.cuda.empty_cache()  # UMA が使った GPU メモリを空ける
     except ImportError:
         pass
-    print(f"DFT 一点計算: {functional}/{basis}（{name}、密度フィッティング）")
+    _free_gpu()
+
+    def stop(reason, hint, done):
+        if fallback:
+            raise DFTSkipped(reason, hint, done)
+        raise ColabUMAError(reason, hint)
+
+    level, msg, hint, est = check_memory(points, charge, multiplicity, basis, quiet=True)
+    if level == "danger" and fallback:  # UMA のノートでは、落ちて UMA の結果まで消えないように DFT を飛ばす
+        stop(f"DFT のメモリが足りない見込みです。{msg}", hint, [])
+    if level != "ok":  # DFT だけのノートでは、見積もりは上限なので注意だけして計算してみる
+        warn(f"DFT のメモリ：{msg}", hint)
+
+    t_start = time.time()
+    budget = time_budget(time_limit_min)
+    deadline = t_start + budget if math.isfinite(budget) else None
+    limit_text = f"、時間の上限 {budget / 60:.0f} 分" if deadline else ""
+    print(f"DFT 一点計算: {functional}/{basis}（{name}、密度フィッティング、基底関数 {est['nao']} 個{limit_text}）")
+    time_hint = ("フォームの DFT の時間の上限を長くするか、基底関数を小さくしてください。"
+                 "Colab の無料版は、ランタイムが最長でおよそ12時間で切れます。")
     progress = ProgressDisplay()
     results = []
     for k, (label, atoms) in enumerate(points):
+        if deadline is not None:
+            left = deadline - time.time()
+            slowest = max((r["seconds"] for r in results), default=0.0)
+            if left <= 0 or slowest > left:  # 前の構造と同じくらいかかるなら、間に合わない
+                stop(f"DFT の時間の上限（{budget / 60:.0f} 分）までに{label}の計算が終わらない見込みです。",
+                     time_hint, results)
         progress.show([bar_row("DFT", k / len(points), f"{label} を計算中（{k}/{len(points)} 完了）")], force=True)
         try:
-            r = single_point(atoms, charge, multiplicity, functional, basis, keep_density=keep_density)
-        except MemoryError:
-            raise ColabUMAError("DFT の計算でメモリが足りません。", "基底関数を def2-SVP にしてください。") from None
+            r = single_point(atoms, charge, multiplicity, functional, basis, keep_density=keep_density,
+                             deadline=deadline)
+        except _TimeUp:
+            stop(f"DFT の時間の上限（{budget / 60:.0f} 分）を過ぎたので、{label}の計算を止めました。", time_hint, results)
         except Exception as e:
-            if "OutOfMemory" in type(e).__name__ or "out of memory" in str(e).lower():
-                raise ColabUMAError("DFT の計算で GPU のメモリが足りません。", "基底関数を def2-SVP にしてください。") from None
+            if _is_out_of_memory(e):
+                text = f"{type(e).__name__} {e}".lower()
+                where = "GPU の" if any(k in text for k in ("outofmemory", "gpu", "cuda")) else ""
+                stop(f"DFT の計算で {where}メモリが足りなくなりました（{label}）。", hint, results)
             raise
         r.update(label=label, atoms=atoms)
         results.append(r)
@@ -125,6 +304,31 @@ def run(points, charge, multiplicity, functional, basis, keep_density=False):
     progress.show([bar_row("DFT", 1.0, f"{len(points)}/{len(points)} 完了")], force=True)
     ok("DFT の一点計算が終わりました。")
     return {"functional": functional, "basis": basis, "backend": name, "points": results}
+
+
+def run_optional(points, charge, multiplicity, functional, basis, uma_rows, time_limit_min=TIME_LIMIT_MIN,
+                 geometry="UMA の構造"):
+    """UMA のノートの DFT 一点計算。メモリ不足・時間切れ・計算のエラーでは DFT だけを飛ばし、UMA の結果の保存まで
+    進められるようにする。(files, log) を返す（飛ばしたときも、終わった構造の分は入れる）。"""
+    try:
+        res = run(points, charge, multiplicity, functional, basis, time_limit_min=time_limit_min, fallback=True)
+        return report(res, uma_rows, geometry)
+    except DFTSkipped as e:
+        reason, hint, done = e.reason, e.hint, e.done
+    except ColabUMAError as e:
+        reason, hint, done = e.message, e.hint, []
+    except Exception as e:  # 予想していないエラーでも、UMA の結果は保存する
+        reason, hint, done = f"DFT の計算中にエラーが起きました（{type(e).__name__}: {str(e)[:200]}）。", "", []
+    _free_gpu()
+    warn(f"DFT の一点計算を飛ばしました。{reason}", (hint + " " if hint else "") + "UMA の結果は、このあと保存します。")
+    files, log = {}, []
+    if done:
+        print("計算が終わった構造の DFT のエネルギー：")
+        files, log = report({"functional": parse_method(functional, basis)[0], "basis": basis,
+                             "backend": done[0]["backend"], "points": done}, uma_rows, geometry)
+        log = log[:-1]  # 最後の空行
+    log = (log or [f"[DFT一点計算] {functional}/{basis}"]) + [f"飛ばしました: {reason}", ""]
+    return files, log
 
 
 def report(dft_res, uma_rows, geometry="UMA の構造"):
