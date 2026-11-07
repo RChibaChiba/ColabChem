@@ -248,12 +248,13 @@ footer p { margin: 0 0 6px; }
       <ol>
         <li>上の「Colab で開く」からノートを開く</li>
         <li><strong>ランタイム → ランタイムのタイプを変更</strong> で <strong>T4 GPU</strong> を選ぶ</li>
-        <li>入力フォームに、出力名・電荷・スピン多重度などを入れる</li>
+        <li>入力フォーム（1. Input form）に、出力名・電荷・スピン多重度などを入れる</li>
         <li><strong>ランタイム → すべて実行</strong> を押す</li>
         <li>ファイル選択ボタンが出たら構造ファイルを選ぶ。あとは放置できます</li>
         <li>結果を確認し、ZIP をダウンロードする</li>
       </ol>
-      <p>ColabDFT ESP と MO では、フォームの入力を「描く」にすると、ファイルの代わりに構造エディタ（JSME）が出ます。描いて「この構造で計算」を押せば、水素を付けて 3D にしてから計算します。</p>
+      <p>ColabDFT ESP と MO では、フォームの入力（<code>input_mode</code>）を「draw」にすると、ファイルの代わりに構造エディタ（JSME）が出ます。描いて「Use this structure」を押せば、水素を付けて 3D にしてから計算します。</p>
+      <p>ノートのフォーム・メッセージ・ログは英語です。エラーには日本語の説明も出ます。各項目の説明は <a href="https://github.com/RChibaChiba/ColabChem/blob/main/README.ja.md">README</a> にあります。</p>
       <div class="note">
         <strong>初回のみ（ColabDFT 以外）：</strong>
         <a href="https://huggingface.co/facebook/UMA">facebook/UMA</a> でアクセスを申請して FAIR Chemistry License v1 に同意し、承認後に Read 権限の<a href="https://huggingface.co/settings/tokens">トークン</a>を作ります。Colab の左サイドバーの🔑（シークレット）に名前 <code>HF_TOKEN</code> で登録し、ノートブックからのアクセスをオンにしてください。

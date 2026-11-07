@@ -45,16 +45,18 @@ class Job:
     basis: str
 
     def condition_lines(self):
-        return [f"電荷: {self.charge}", f"スピン多重度: {self.multiplicity}",
-                f"汎関数: {self.functional}", f"基底関数: {self.basis}"]
+        return [f"Charge: {self.charge}", f"Spin multiplicity: {self.multiplicity}",
+                f"Functional: {self.functional}", f"Basis set: {self.basis}"]
 
 
 def parse_method(functional, basis):
-    key = functional.split("（")[0].strip()
+    key = functional.split("（")[0].split(" (")[0].strip()  # 「ωB97M-V (same as OMol25)」→ ωB97M-V
     if key not in FUNCTIONALS:
-        raise ColabUMAError(f"汎関数「{functional}」には対応していません。", f"{', '.join(FUNCTIONALS)} から選んでください。")
+        raise ColabUMAError(f"The functional \"{functional}\" is not supported.", f"Choose one of {', '.join(FUNCTIONALS)}.",
+                            ja=f"汎関数「{functional}」には対応していません。", ja_hint=f"{', '.join(FUNCTIONALS)} から選んでください。")
     if basis not in BASIS_SETS:
-        raise ColabUMAError(f"基底関数「{basis}」には対応していません。", f"{', '.join(BASIS_SETS)} から選んでください。")
+        raise ColabUMAError(f"The basis set \"{basis}\" is not supported.", f"Choose one of {', '.join(BASIS_SETS)}.",
+                            ja=f"基底関数「{basis}」には対応していません。", ja_hint=f"{', '.join(BASIS_SETS)} から選んでください。")
     return key, basis
 
 
@@ -203,28 +205,28 @@ def check_memory(points, charge, multiplicity, basis, quiet=False):
     need = est["cderi"]
     gpu = _gpu_available() if _backend()[0].startswith("gpu") else None
     host = _host_available()
-    size = (f"{est['n_atoms']} 原子、基底関数 {est['nao']} 個、補助基底 {est['naux']} 個で、"
-            f"3中心積分は最大 約 {_gb(need)}")
-    free = "、".join(x for x in (f"GPU {_gb(gpu)}" if gpu is not None else "",
+    size = (f"{est['n_atoms']} atoms, {est['nao']} basis functions and {est['naux']} auxiliary functions: "
+            f"the three-center integrals take up to about {_gb(need)}")
+    free = ", ".join(x for x in (f"GPU {_gb(gpu)}" if gpu is not None else "",
                                  f"CPU {_gb(host)}" if host is not None else "") if x)
-    hint = "基底関数を小さくする（def2-SVP）か、Colab Pro の大容量 RAM・A100 などのランタイムを使ってください。"
+    hint = "Use a smaller basis set (def2-SVP), or a runtime with more memory such as Colab Pro high-RAM or an A100."
     if gpu is not None and need < GPU_CDERI_FRACTION * gpu:
-        level, msg = "ok", f"{size}。GPU のメモリに収まる見込みです（空き {free}）。"
+        level, msg = "ok", f"{size}. They should fit in GPU memory (free: {free})."
     elif host is None or need < HOST_WARN_FRACTION * host:
         level = "ok" if gpu is None else "warn"
-        msg = (f"{size}。GPU のメモリに収まらないので CPU のメモリに置きます（空き {free}）。"
-               "計算が遅くなります。" if gpu is not None else f"{size}（空き {free}）。")
+        msg = (f"{size}. They do not fit in GPU memory, so they go to CPU memory (free: {free}). "
+               "The calculation will be slower." if gpu is not None else f"{size} (free: {free}).")
     elif need < HOST_DANGER_FRACTION * host:
-        level, msg = "warn", (f"{size}です。メモリの空き（{free}）に対してぎりぎりです。"
-                              "途中でメモリが足りなくなると、Colab のランタイムごと落ちることがあります。")
+        level, msg = "warn", (f"{size}. This is close to the free memory ({free}). "
+                              "If memory runs out during the calculation, the Colab runtime can crash.")
     else:
-        level, msg = "danger", (f"{size}です。メモリの空き（{free}）を超えそうです。"
-                                "このまま計算すると、Colab のランタイムごと落ちる可能性が高いです。")
+        level, msg = "danger", (f"{size}. This is likely to exceed the free memory ({free}). "
+                                "Running it is likely to crash the Colab runtime.")
     if gpu is None and level == "danger":
         # CPU の PySCF は、cderi がメモリに収まらなければディスクに置くので落ちない。ただしとても遅い
-        level, msg = "warn", f"{size}です。CPU のメモリに収まらないのでディスクを使います（空き {free}）。とても遅くなります。"
+        level, msg = "warn", f"{size}. They do not fit in CPU memory, so the disk is used (free: {free}). This is very slow."
     if not quiet and level != "ok":
-        warn(f"DFT のメモリ：{msg}", hint)
+        warn(f"DFT memory: {msg}", hint)
     return level, msg, hint, est
 
 
@@ -252,11 +254,12 @@ def run(points, charge, multiplicity, functional, basis, keep_density=False, tim
     """
     functional, basis = parse_method(functional, basis)
     if max(int(a.numbers.max()) for _, a in points) > MAX_Z:
-        raise ColabUMAError("def2 基底関数がない元素が含まれています。", "扱えるのは H〜Rn（原子番号1〜86）です。")
+        raise ColabUMAError("The structure has an element without a def2 basis set.", "Supported elements are H–Rn (Z = 1–86).",
+                            ja="def2 基底関数がない元素が含まれています。", ja_hint="扱えるのは H〜Rn（原子番号1〜86）です。")
     name, _ = _backend()
     if not name.startswith("gpu"):
-        warn("gpu4pyscf が使えないため、CPU の PySCF で計算します。かなり時間がかかります。",
-             "ランタイムのタイプで T4 GPU を選んでいるか確認してください。")
+        warn("gpu4pyscf is not available, so DFT runs on the CPU with PySCF. This takes much longer.",
+             "Check that T4 GPU is selected as the runtime type.")
     try:
         import torch
         if torch.cuda.is_available():
@@ -265,24 +268,26 @@ def run(points, charge, multiplicity, functional, basis, keep_density=False, tim
         pass
     _free_gpu()
 
-    def stop(reason, hint, done):
+    def stop(reason, hint, done, ja="", ja_hint=""):
         if fallback:
             raise DFTSkipped(reason, hint, done)
-        raise ColabUMAError(reason, hint)
+        raise ColabUMAError(reason, hint, ja=ja, ja_hint=ja_hint)
 
     level, msg, hint, est = check_memory(points, charge, multiplicity, basis, quiet=True)
     if level == "danger" and fallback:  # UMA のノートでは、落ちて UMA の結果まで消えないように DFT を飛ばす
-        stop(f"DFT のメモリが足りない見込みです。{msg}", hint, [])
+        stop(f"DFT is expected to run out of memory. {msg}", hint, [])
     if level != "ok":  # DFT だけのノートでは、見積もりは上限なので注意だけして計算してみる
-        warn(f"DFT のメモリ：{msg}", hint)
+        warn(f"DFT memory: {msg}", hint)
 
     t_start = time.time()
     budget = time_budget(time_limit_min)
     deadline = t_start + budget if math.isfinite(budget) else None
-    limit_text = f"、時間の上限 {budget / 60:.0f} 分" if deadline else ""
-    print(f"DFT 一点計算: {functional}/{basis}（{name}、密度フィッティング、基底関数 {est['nao']} 個{limit_text}）")
-    time_hint = ("フォームの DFT の時間の上限を長くするか、基底関数を小さくしてください。"
-                 "Colab の無料版は、ランタイムが最長でおよそ12時間で切れます。")
+    limit_text = f", time limit {budget / 60:.0f} min" if deadline else ""
+    print(f"DFT single point: {functional}/{basis} ({name}, density fitting, {est['nao']} basis functions{limit_text})")
+    time_hint = ("Raise the DFT time limit in the form, or use a smaller basis set. "
+                 "A free Colab runtime ends after at most about 12 hours.")
+    time_hint_ja = ("フォームの DFT の時間の上限を長くするか、基底関数を小さくしてください。"
+                    "Colab の無料版は、ランタイムが最長でおよそ12時間で切れます。")
     progress = ProgressDisplay()
     results = []
     for k, (label, atoms) in enumerate(points):
@@ -290,33 +295,37 @@ def run(points, charge, multiplicity, functional, basis, keep_density=False, tim
             left = deadline - time.time()
             slowest = max((r["seconds"] for r in results), default=0.0)
             if left <= 0 or slowest > left:  # 前の構造と同じくらいかかるなら、間に合わない
-                stop(f"DFT の時間の上限（{budget / 60:.0f} 分）までに{label}の計算が終わらない見込みです。",
-                     time_hint, results)
-        progress.show([bar_row("DFT", k / len(points), f"{label} を計算中（{k}/{len(points)} 完了）")], force=True)
+                stop(f"DFT of {label} is not expected to finish within the time limit ({budget / 60:.0f} min).",
+                     time_hint, results, f"DFT の時間の上限（{budget / 60:.0f} 分）までに {label} の計算が終わらない見込みです。",
+                     time_hint_ja)
+        progress.show([bar_row("DFT", k / len(points), f"computing {label} ({k}/{len(points)} done)")], force=True)
         try:
             r = single_point(atoms, charge, multiplicity, functional, basis, keep_density=keep_density,
                              deadline=deadline, keep_orbitals=keep_orbitals)
         except _TimeUp:
-            stop(f"DFT の時間の上限（{budget / 60:.0f} 分）を過ぎたので、{label}の計算を止めました。", time_hint, results)
+            stop(f"The DFT time limit ({budget / 60:.0f} min) was reached, so DFT of {label} was stopped.", time_hint, results,
+                 f"DFT の時間の上限（{budget / 60:.0f} 分）を過ぎたので、{label} の計算を止めました。", time_hint_ja)
         except Exception as e:
             if _is_out_of_memory(e):
                 text = f"{type(e).__name__} {e}".lower()
-                where = "GPU の" if any(k in text for k in ("outofmemory", "gpu", "cuda")) else ""
-                stop(f"DFT の計算で {where}メモリが足りなくなりました（{label}）。", hint, results)
+                gpu_mem = any(k in text for k in ("outofmemory", "gpu", "cuda"))
+                stop(f"DFT ran out of {'GPU ' if gpu_mem else ''}memory ({label}).", hint, results,
+                     f"DFT の計算で {'GPU の' if gpu_mem else ''}メモリが足りなくなりました（{label}）。",
+                     "基底関数を小さくする（def2-SVP）か、Colab Pro の大容量 RAM・A100 などのランタイムを使ってください。")
             raise
         r.update(label=label, atoms=atoms)
         results.append(r)
-        print(f"  {label}: E = {r['energy']:.8f} Ha  {'収束' if r['converged'] else 'SCF未収束'}"
-              f"（基底関数 {r['nao']} 個、{r['seconds']:.1f} 秒）")
+        print(f"  {label}: E = {r['energy']:.8f} Ha  {'converged' if r['converged'] else 'SCF NOT converged'}"
+              f" ({r['nao']} basis functions, {r['seconds']:.1f} s)")
         if not r["converged"]:
-            warn(f"{label}の SCF が収束しませんでした。このエネルギーは信頼できません。")
-    progress.show([bar_row("DFT", 1.0, f"{len(points)}/{len(points)} 完了")], force=True)
-    ok("DFT の一点計算が終わりました。")
+            warn(f"The SCF of {label} did not converge. This energy is not reliable.")
+    progress.show([bar_row("DFT", 1.0, f"{len(points)}/{len(points)} done")], force=True)
+    ok("DFT single points finished.")
     return {"functional": functional, "basis": basis, "backend": name, "points": results}
 
 
 def run_optional(points, charge, multiplicity, functional, basis, uma_rows, time_limit_min=TIME_LIMIT_MIN,
-                 geometry="UMA の構造"):
+                 geometry="UMA structures"):
     """UMA のノートの DFT 一点計算。メモリ不足・時間切れ・計算のエラーでは DFT だけを飛ばし、UMA の結果の保存まで
     進められるようにする。(files, log) を返す（飛ばしたときも、終わった構造の分は入れる）。"""
     try:
@@ -327,20 +336,20 @@ def run_optional(points, charge, multiplicity, functional, basis, uma_rows, time
     except ColabUMAError as e:
         reason, hint, done = e.message, e.hint, []
     except Exception as e:  # 予想していないエラーでも、UMA の結果は保存する
-        reason, hint, done = f"DFT の計算中にエラーが起きました（{type(e).__name__}: {str(e)[:200]}）。", "", []
+        reason, hint, done = f"An error occurred in DFT ({type(e).__name__}: {str(e)[:200]}).", "", []
     _free_gpu()
-    warn(f"DFT の一点計算を飛ばしました。{reason}", (hint + " " if hint else "") + "UMA の結果は、このあと保存します。")
+    warn(f"DFT single points were skipped. {reason}", (hint + " " if hint else "") + "The UMA results are saved next.")
     files, log = {}, []
     if done:
-        print("計算が終わった構造の DFT のエネルギー：")
+        print("DFT energies of the structures that finished:")
         files, log = report({"functional": parse_method(functional, basis)[0], "basis": basis,
                              "backend": done[0]["backend"], "points": done}, uma_rows, geometry)
         log = log[:-1]  # 最後の空行
-    log = (log or [f"[DFT一点計算] {functional}/{basis}"]) + [f"飛ばしました: {reason}", ""]
+    log = (log or [f"[DFT single point] {functional}/{basis}"]) + [f"Skipped: {reason}", ""]
     return files, log
 
 
-def report(dft_res, uma_rows, geometry="UMA の構造"):
+def report(dft_res, uma_rows, geometry="UMA structures"):
     """UMA と DFT のエネルギー差を並べて表示する。geometry は構造の説明。(files, log) を返す。"""
     import pandas as pd
     from IPython.display import display
@@ -353,15 +362,15 @@ def report(dft_res, uma_rows, geometry="UMA の構造"):
     for p in pts:
         row = {"": p["label"], "DFT (Hartree)": round(p["energy"], 8)}
         if len(pts) > 1:  # 1構造だけなら比べる相手がない
-            row[f"ΔE DFT（{pts[0]['label']}基準, kcal/mol）"] = round((p["energy"] - base) * KCALMOL_PER_HARTREE, 2)
+            row[f"ΔE DFT (vs {pts[0]['label']}, kcal/mol)"] = round((p["energy"] - base) * KCALMOL_PER_HARTREE, 2)
         if len(pts) > 1 and p["label"] in uma and ubase is not None:
-            row[f"ΔE UMA（kcal/mol）"] = round((uma[p["label"]] - ubase) / EV_PER_HARTREE * KCALMOL_PER_HARTREE, 2)
-        row["SCF収束"] = "はい" if p["converged"] else "いいえ"
+            row["ΔE UMA (kcal/mol)"] = round((uma[p["label"]] - ubase) / EV_PER_HARTREE * KCALMOL_PER_HARTREE, 2)
+        row["SCF converged"] = "yes" if p["converged"] else "no"
         rows.append(row)
     df = pd.DataFrame(rows)
-    print(f"DFT 一点計算（{dft_res['functional']}/{dft_res['basis']}、{geometry}）：")
+    print(f"DFT single points ({dft_res['functional']}/{dft_res['basis']}, {geometry}):")
     display(df.style.hide(axis="index"))
-    log = [f"[DFT一点計算] {dft_res['functional']}/{dft_res['basis']}（{dft_res['backend']}、密度フィッティング、{geometry}）"]
+    log = [f"[DFT single point] {dft_res['functional']}/{dft_res['basis']} ({dft_res['backend']}, density fitting, {geometry})"]
     log += [f"{p['label']}: E = {p['energy']:.10f} Ha  converged = {p['converged']}  nao = {p['nao']}  "
             f"{p['seconds']:.1f} s" for p in pts]
     if len(pts) == 3 and pts[1]["label"] == "TS":
@@ -369,9 +378,9 @@ def report(dft_res, uma_rows, geometry="UMA の構造"):
         fwd = (e_ts - e_r) * KCALMOL_PER_HARTREE
         rev = (e_ts - e_p) * KCALMOL_PER_HARTREE
         rxn = (e_p - e_r) * KCALMOL_PER_HARTREE
-        print(f"活性化エネルギー（DFT）: 正反応 {fwd:.2f} kcal/mol、逆反応 {rev:.2f} kcal/mol、反応エネルギー {rxn:.2f} kcal/mol")
-        log += [f"活性化エネルギー 正反応: {fwd:.4f} kcal/mol", f"活性化エネルギー 逆反応: {rev:.4f} kcal/mol",
-                f"反応エネルギー: {rxn:.4f} kcal/mol"]
+        print(f"Activation energy (DFT): forward {fwd:.2f} kcal/mol, reverse {rev:.2f} kcal/mol, reaction energy {rxn:.2f} kcal/mol")
+        log += [f"Activation energy, forward: {fwd:.4f} kcal/mol", f"Activation energy, reverse: {rev:.4f} kcal/mol",
+                f"Reaction energy: {rxn:.4f} kcal/mol"]
     log.append("")
     files = {"dft.csv": df.to_csv(index=False)}
     return files, log

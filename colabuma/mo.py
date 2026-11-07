@@ -9,7 +9,7 @@ import uuid
 
 import numpy as np
 
-from .esp import GRID_SPACING, MARGIN, _batches, cube_text, downsample, make_grid
+from .esp import GRID_SPACING, MARGIN, _batches, cube_text, downsample, grid_quality, make_grid
 from .ui import ColabUMAError, ProgressDisplay, bar_row, ok, warn
 
 EV_PER_HARTREE = 27.211386245988
@@ -17,11 +17,11 @@ EV_PER_HARTREE = 27.211386245988
 MAX_POINTS = 500_000  # 格子の点の数の上限。超えるなら格子を粗くする
 DISPLAY_POINTS = 80_000  # 3D表示に渡す1軌道あたりの点の数。多いとノートの出力が重くなる
 MAX_ORBITALS = 8  # 一度に表示する軌道の数の上限（開殻では α と β で倍になる）
-TABLE_RANGE = 5
+TABLE_RANGE = 5  # エネルギーの表に出す、HOMO より下と LUMO より上の軌道の数
 DIAGRAM_RANGE = 8  # 準位図に出す、HOMO より下と LUMO より上の軌道の数
 CORE_GAP_EV = 40.0  # HOMO よりこれだけ低い軌道（内殻）は準位図に出さない。フォームで指定すればボタンから表示できる
-AO_CACHE_BYTES = 400e6
-DISPLAY_CUTOFF = 1e-3  # 3D表示に渡す値で、これより小さいものは 0 にする（等値面の選択肢の最小 0.005 より十分小さい）  # 表示用の格子の AO の値を覚えておく上限  # エネルギーの表に出す、HOMO より下と LUMO より上の軌道の数
+AO_CACHE_BYTES = 400e6  # 表示用の格子の AO の値を覚えておく上限
+DISPLAY_CUTOFF = 1e-3  # 3D表示に渡す値で、これより小さいものは 0 にする（等値面の選択肢の最小 0.005 より十分小さい）
 POSITIVE_COLOR = "#1f4fd8"  # 正の等値面（青）
 NEGATIVE_COLOR = "#d62728"  # 負の等値面（赤）
 
@@ -34,37 +34,44 @@ def parse_orbitals(text):
     text = text.replace("＋", "+").replace("－", "-").replace("−", "-")
     tokens = [re.sub(r"\s+", "", t) for t in re.split(r"[,、，]", text) if t.strip()]
     if not tokens:
-        raise ColabUMAError("表示する軌道が指定されていません。", "例：HOMO, LUMO")
+        raise ColabUMAError("No orbitals were given.", "For example: HOMO, LUMO",
+                            ja="表示する軌道が指定されていません。", ja_hint="例：HOMO, LUMO")
     specs = []
     for t in tokens:
         m = _SPEC.match(t.upper())
         if not m:
-            raise ColabUMAError(f"軌道の指定「{t}」が読めません。",
-                                "HOMO、LUMO、HOMO-1、LUMO+1、または軌道の番号（1始まり）をカンマで区切って書いてください。")
+            raise ColabUMAError(f"Could not read the orbital \"{t}\".",
+                                "Write HOMO, LUMO, HOMO-1, LUMO+1 or orbital numbers (from 1), separated by commas.",
+                                ja=f"軌道の指定「{t}」が読めません。",
+                                ja_hint="HOMO、LUMO、HOMO-1、LUMO+1、または軌道の番号（1始まり）をカンマで区切って書いてください。")
         if m.group(4):
             if int(m.group(4)) < 1:
-                raise ColabUMAError(f"軌道の番号「{t}」は 1 以上にしてください。", "番号はエネルギーの低い順に 1 から数えます。")
+                raise ColabUMAError(f"The orbital number \"{t}\" must be 1 or more.", "Orbitals are numbered from 1, lowest energy first.",
+                                    ja=f"軌道の番号「{t}」は 1 以上にしてください。", ja_hint="番号はエネルギーの低い順に 1 から数えます。")
             spec = ("index", int(m.group(4)) - 1)
         else:
             shift = int(m.group(3) or 0) * (-1 if m.group(2) == "-" else 1)
             if (m.group(1) == "HOMO" and shift > 0) or (m.group(1) == "LUMO" and shift < 0):
-                raise ColabUMAError(f"軌道の指定「{t}」は使えません。",
-                                    "HOMO より上は LUMO+n、LUMO より下は HOMO-n と書いてください。")
+                raise ColabUMAError(f"The orbital \"{t}\" cannot be used.",
+                                    "Write orbitals above HOMO as LUMO+n, and orbitals below LUMO as HOMO-n.",
+                                    ja=f"軌道の指定「{t}」は使えません。",
+                                    ja_hint="HOMO より上は LUMO+n、LUMO より下は HOMO-n と書いてください。")
             spec = (m.group(1), shift)
         if spec not in specs:
             specs.append(spec)
     if len(specs) > MAX_ORBITALS:
-        raise ColabUMAError(f"一度に表示できる軌道は {MAX_ORBITALS} 個までです。", "軌道の数を減らしてください。")
+        raise ColabUMAError(f"At most {MAX_ORBITALS} orbitals can be shown at once.", "Give fewer orbitals.",
+                            ja=f"一度に表示できる軌道は {MAX_ORBITALS} 個までです。", ja_hint="軌道の数を減らしてください。")
     return specs
 
 
 def check_form(orbitals, isovalue, quality):
     specs = parse_orbitals(orbitals)
     if isovalue <= 0 or isovalue > 0.2:
-        raise ColabUMAError("等値面の値は 0 より大きく 0.2 以下にしてください。",
-                            "よく使うのは 0.02〜0.05（Bohr^-3/2）です。")
-    if quality not in GRID_SPACING:
-        raise ColabUMAError(f"格子の細かさ「{quality}」には対応していません。", f"{', '.join(GRID_SPACING)} から選んでください。")
+        raise ColabUMAError("The isovalue must be greater than 0 and at most 0.2.", "Common values are 0.02–0.05 (Bohr^-3/2).",
+                            ja="等値面の値は 0 より大きく 0.2 以下にしてください。",
+                            ja_hint="よく使うのは 0.02〜0.05（Bohr^-3/2）です。")
+    grid_quality(quality)
     return specs
 
 
@@ -91,10 +98,12 @@ def select(point, specs):
         nmo = len(e)
         for base, shift in specs:
             i = shift if base == "index" else (homo + shift if base == "HOMO" else homo + 1 + shift)
-            name = f"{shift + 1}番" if base == "index" else (base if shift == 0 else f"{base}{shift:+d}")
+            name = f"#{shift + 1}" if base == "index" else (base if shift == 0 else f"{base}{shift:+d}")
             if not 0 <= i < nmo:
-                raise ColabUMAError(f"{spin}軌道「{name}」はありません（軌道は 1〜{nmo} 番、HOMO は {homo + 1} 番です）。",
-                                    "表示する軌道の指定を変えてください。")
+                raise ColabUMAError(f"There is no {spin + ' ' if spin else ''}orbital {name} "
+                                    f"(orbitals are 1–{nmo}, HOMO is {homo + 1}).", "Change the orbitals to show.",
+                                    ja=f"{spin}軌道「{name}」はありません（軌道は 1〜{nmo} 番、HOMO は {homo + 1} 番です）。",
+                                    ja_hint="表示する軌道の指定を変えてください。")
             chosen.append({"spin": spin, "index": i, "label": _label(i, homo), "energy": float(e[i]),
                            "occ": float(n[i]), "coeff": c[:, i]})
     return chosen
@@ -103,43 +112,46 @@ def select(point, specs):
 def compute(point, atoms, specs, isovalue, quality):
     """point は dft.run(..., keep_orbitals=True) の1構造分の結果。選んだ軌道の格子上の値を計算して dict で返す。"""
     if point.get("mo_coeff") is None:
-        raise ColabUMAError("DFT の軌道がありません。", "「DFT 一点計算」のセルから実行し直してください。")
+        raise ColabUMAError("There are no DFT orbitals.", "Run again from the DFT cell.",
+                            ja="DFT の軌道がありません。", ja_hint="「DFT」のセルから実行し直してください。")
+    quality = grid_quality(quality)
     mol = point["mol"]
     orbitals = select(point, specs)
     grid = make_grid(mol.atom_coords(), GRID_SPACING[quality], MAX_POINTS, MARGIN)
     coords = grid.coords()
-    print(f"格子：{grid.shape[0]}×{grid.shape[1]}×{grid.shape[2]}（{grid.size:,} 点、間隔 {grid.spacing:.3f} Bohr）")
+    print(f"Grid: {grid.shape[0]}×{grid.shape[1]}×{grid.shape[2]} ({grid.size:,} points, spacing {grid.spacing:.3f} Bohr)")
     if grid.spacing > GRID_SPACING[quality]:
-        print(f"分子が大きいため、格子の間隔を指定の {GRID_SPACING[quality]} Bohr より粗くしました。")
+        print(f"The molecule is large, so the grid is coarser than the requested {GRID_SPACING[quality]} Bohr.")
 
     coeff = np.stack([o["coeff"] for o in orbitals], axis=1)
     values = np.empty((len(coords), len(orbitals)))
     progress = ProgressDisplay()
-    progress.show([bar_row("軌道", 0.0, "0%")], force=True)
+    progress.show([bar_row("Orbitals", 0.0, "0%")], force=True)
     batches = _batches(len(coords), 5000)
     try:
         for k, (p0, p1) in enumerate(batches):
             ao = mol.eval_gto("GTOval_cart" if mol.cart else "GTOval_sph", coords[p0:p1])
             values[p0:p1] = ao @ coeff
             f = (k + 1) / len(batches)
-            progress.show([bar_row("軌道", f, f"{f * 100:.0f}%")], force=k + 1 == len(batches))
+            progress.show([bar_row("Orbitals", f, f"{f * 100:.0f}%")], force=k + 1 == len(batches))
     except MemoryError:
-        raise ColabUMAError("軌道の計算でメモリが足りません。", "格子の細かさを「粗い」にしてください。") from None
+        raise ColabUMAError("The orbital calculation ran out of memory.", "Set the grid quality to coarse.",
+                            ja="軌道の計算でメモリが足りません。", ja_hint="格子の細かさを「coarse」にしてください。") from None
 
     for j, o in enumerate(orbitals):
         o["values"] = values[:, j]
         o.pop("coeff")
     edge = [_name(o) for o in orbitals if _touches_box(o["values"], grid, isovalue)]
     if edge:
-        warn(f"{', '.join(edge)} の等値面（{isovalue}）が計算範囲の端に届いています。面の一部が切れている可能性があります。",
-             "等値面の値を大きくしてください（例：0.05）。")
-    ok("軌道の計算が終わりました。")
+        warn(f"The isosurface ({isovalue}) of {', '.join(edge)} reaches the edge of the grid. Part of it may be cut off.",
+             "Use a larger isovalue (for example 0.05).")
+    ok("Orbital calculation finished.")
     return {"grid": grid, "orbitals": orbitals, "isovalue": isovalue, "point": point,
             "atom_coords": mol.atom_coords(), "numbers": atoms.numbers.copy(), "atoms": atoms}
 
 
 def _name(o):
-    return f"{o['label']}（{o['spin']}）" if o["spin"] else o["label"]
+    return f"{o['label']} ({o['spin']})" if o["spin"] else o["label"]
 
 
 def _file_name(o):
@@ -196,15 +208,15 @@ def _cube_for_click(spin, index):
     from IPython.display import JSON
 
     if _explorer is None:
-        return JSON({"error": "軌道の計算結果がありません。「軌道の計算」のセルから実行し直してください。"})
+        return JSON({"error": "No orbital results. Run again from the orbital calculation cell."})
     sets = _spin_sets(_explorer.result["point"])
     spin, index = int(spin), int(index)
     if not (0 <= spin < len(sets) and 0 <= index < len(sets[spin][2])):
-        return JSON({"error": "その軌道はありません。"})
+        return JSON({"error": "That orbital does not exist."})
     try:
         values = _explorer.values(sets[spin][1][:, index])
     except MemoryError:
-        return JSON({"error": "メモリが足りません。"})
+        return JSON({"error": "Out of memory."})
     return JSON({"cube": _explorer.cube(values, f"orbital {index + 1}")})
 
 
@@ -268,9 +280,9 @@ def energy_table(point):
         occupied = np.nonzero(n > 1e-6)[0]
         homo = int(occupied.max()) if occupied.size else -1
         for i, (ei, ni) in enumerate(zip(e, n)):
-            row = {"スピン": spin} if spin else {}
-            row.update({"番号": i + 1, "軌道": _label(i, homo), "占有数": float(ni),
-                        "エネルギー (Hartree)": round(float(ei), 6), "エネルギー (eV)": round(float(ei) * EV_PER_HARTREE, 4)})
+            row = {"Spin": spin} if spin else {}
+            row.update({"No.": i + 1, "Orbital": _label(i, homo), "Occupation": float(ni),
+                        "Energy (Hartree)": round(float(ei), 6), "Energy (eV)": round(float(ei) * EV_PER_HARTREE, 4)})
             rows.append(row)
     return pd.DataFrame(rows)
 
@@ -291,25 +303,25 @@ def report(result):
     from IPython.display import display
 
     point = result["point"]
-    lines = [f"等値面: ±{result['isovalue']} Bohr^-3/2"]
+    lines = [f"Isovalue: ±{result['isovalue']} Bohr^-3/2"]
     for spin, h, l, g in gaps(point):
-        s = f"（{spin}）" if spin else ""
-        lines.append(f"HOMO{s}: {h:.3f} eV、LUMO{s}: {l:.3f} eV、HOMO-LUMO ギャップ{s}: {g:.3f} eV")
+        s = f" ({spin})" if spin else ""
+        lines.append(f"HOMO{s}: {h:.3f} eV, LUMO{s}: {l:.3f} eV, HOMO-LUMO gap{s}: {g:.3f} eV")
     print("\n".join(lines))
-    print("青が正、赤が負の等値面です。軌道の符号（位相）には意味がないので、青と赤が入れ替わることがあります。")
+    print("Blue is positive and red is negative. The overall sign of an orbital has no meaning, so the colors can swap.")
 
     explorer(result)
 
     table = energy_table(point)
-    near = table[table["軌道"].str.match(r"^(HOMO(-[0-9]+)?|LUMO(\+[0-9]+)?)$")
-                 & table["軌道"].map(lambda s: int(re.sub(r"\D", "", s) or 0) < TABLE_RANGE)]
-    print("HOMO・LUMO の近くの軌道のエネルギー（全軌道は ZIP の mo_energies.csv）：")
+    near = table[table["Orbital"].str.match(r"^(HOMO(-[0-9]+)?|LUMO(\+[0-9]+)?)$")
+                 & table["Orbital"].map(lambda s: int(re.sub(r"\D", "", s) or 0) < TABLE_RANGE)]
+    print("Orbital energies near HOMO and LUMO (all orbitals are in mo_energies.csv in the ZIP):")
     display(near.style.hide(axis="index"))
 
     grid = result["grid"]
-    log = [f"[分子軌道] 格子 {grid.shape[0]}×{grid.shape[1]}×{grid.shape[2]}、間隔 {grid.spacing:.4f} Bohr"] + lines
-    log += [f"{_name(o)}: {o['index'] + 1} 番、E = {o['energy']:.6f} Ha（{o['energy'] * EV_PER_HARTREE:.4f} eV）、"
-            f"占有数 {o['occ']:g} → {_file_name(o)}" for o in result["orbitals"]] + [""]
+    log = [f"[Molecular orbitals] grid {grid.shape[0]}×{grid.shape[1]}×{grid.shape[2]}, spacing {grid.spacing:.4f} Bohr"] + lines
+    log += [f"{_name(o)}: No. {o['index'] + 1}, E = {o['energy']:.6f} Ha ({o['energy'] * EV_PER_HARTREE:.4f} eV), "
+            f"occupation {o['occ']:g} → {_file_name(o)}" for o in result["orbitals"]] + [""]
     numbers, coords = result["numbers"], result["atom_coords"]
     files = {"mo_energies.csv": table.to_csv(index=False)}
     for o in result["orbitals"]:

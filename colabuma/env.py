@@ -59,8 +59,8 @@ def has_gpu():
 def check_gpu():
     # torch を読み込む前に nvidia-smi で調べる
     if not has_gpu():
-        warn("GPUが見つからないため、CPUで計算します。計算はかなり遅くなります。",
-             "メニューの「ランタイム → ランタイムのタイプを変更」で「T4 GPU」を選び、もう一度すべて実行してください。")
+        warn("No GPU was found, so the calculations run on the CPU. They will be much slower.",
+             "Choose T4 GPU in Runtime → Change runtime type, then run all again.")
 
 
 def ensure_token():
@@ -73,14 +73,16 @@ def ensure_token():
     except Exception:
         token = None
     if not token:
-        warn("ColabのシークレットにHF_TOKENが登録されていません。",
-             "左サイドバーの鍵アイコン（シークレット）で、名前 HF_TOKEN・値にトークンを登録し、"
-             "「ノートブックからのアクセス」をオンにしてください。今回は下の欄に貼り付けても続行できます。")
+        warn("HF_TOKEN is not set in Colab's Secrets.",
+             "Open the key icon (Secrets) in the left sidebar, add your token with the name HF_TOKEN, "
+             "and turn on notebook access. For now you can also paste it in the box below.")
         from getpass import getpass
-        token = getpass("Hugging Faceのアクセストークンを貼り付けてEnter: ").strip()
+        token = getpass("Paste your Hugging Face access token and press Enter: ").strip()
     if not token:
-        raise ColabUMAError("Hugging Faceのアクセストークンがありません。",
-                            "https://huggingface.co/settings/tokens でRead権限のトークンを作り、シークレットにHF_TOKENとして登録してください。")
+        raise ColabUMAError("No Hugging Face access token was given.",
+                            "Create a token with Read access at https://huggingface.co/settings/tokens and add it to Secrets as HF_TOKEN.",
+                            ja="Hugging Faceのアクセストークンがありません。",
+                            ja_hint="https://huggingface.co/settings/tokens でRead権限のトークンを作り、シークレットにHF_TOKENとして登録してください。")
     os.environ["HF_TOKEN"] = token
 
 
@@ -88,16 +90,18 @@ def _pip(args, what):
     r = subprocess.run([sys.executable, "-m", "pip", "install", "-q", *args], capture_output=True, text=True)
     if r.returncode != 0:
         print("\n".join(r.stderr.strip().splitlines()[-15:]))
-        raise ColabUMAError(f"{what}のインストールに失敗しました（上にpipのメッセージを表示しています）。",
-                            "「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
+        raise ColabUMAError(f"Installing {what} failed (pip's messages are shown above).", "Use Runtime → Restart session, then run all again.",
+                            ja=f"{what}のインストールに失敗しました（上にpipのメッセージを表示しています）。",
+                            ja_hint="「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
 
 
 def _pip_uninstall(pkgs, what):
     r = subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "-q", *pkgs], capture_output=True, text=True)
     if r.returncode != 0:
         print("\n".join(r.stderr.strip().splitlines()[-15:]))
-        raise ColabUMAError(f"{what}のインストールの準備に失敗しました（上にpipのメッセージを表示しています）。",
-                            "「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
+        raise ColabUMAError(f"Preparing to install {what} failed (pip's messages are shown above).", "Use Runtime → Restart session, then run all again.",
+                            ja=f"{what}のインストールの準備に失敗しました（上にpipのメッセージを表示しています）。",
+                            ja_hint="「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
 
 
 def _install_extra(name):
@@ -108,12 +112,15 @@ def _install_extra(name):
                if (others and pkg == keep) or installed(pkg) is None or ("==" in pin and installed(pkg) != pin.split("==")[1])]
     if not missing:
         return False
-    label = {"structure": "構造の読み込み（ASE）", "draw": "描いた構造の 3D 化（RDKit）", "ts": "遷移状態探索（DMF・Sella）", "dft": "DFT（gpu4pyscf）"}[name]
-    print(f"{label}のライブラリをインストールしています。1〜2分かかります…")
+    label = {"structure": "structure reading (ASE)", "draw": "3D from drawings (RDKit)", "ts": "TS search (DMF, Sella)",
+             "dft": "DFT (gpu4pyscf)"}[name]
+    print(f"Installing the libraries for {label}. This takes 1–2 minutes…")
     if spec["apt"]:
         if shutil.which("apt-get") is None:
-            raise ColabUMAError(f"{label}に必要なシステムのライブラリを入れられませんでした（apt-get がありません）。",
-                                "Google Colab で実行してください。")
+            raise ColabUMAError(f"Could not install the system libraries needed for {label} (apt-get is missing).",
+                                "Run the notebook on Google Colab.",
+                                ja=f"{label} に必要なシステムのライブラリを入れられませんでした（apt-get がありません）。",
+                                ja_hint="Google Colab で実行してください。")
         env = dict(os.environ, DEBIAN_FRONTEND="noninteractive")
         r = subprocess.run(["apt-get", "install", "-y", "-q", *spec["apt"]], capture_output=True, text=True, env=env)
         if r.returncode != 0:
@@ -121,16 +128,20 @@ def _install_extra(name):
             r = subprocess.run(["apt-get", "install", "-y", "-q", *spec["apt"]], capture_output=True, text=True, env=env)
         if r.returncode != 0:
             print("\n".join(r.stderr.strip().splitlines()[-15:]))
-            raise ColabUMAError(f"{label}に必要なシステムのライブラリ（{' '.join(spec['apt'])}）を入れられませんでした。",
-                                "しばらく待ってからもう一度実行してください。")
+            raise ColabUMAError(f"Could not install the system libraries needed for {label} ({' '.join(spec['apt'])}).",
+                                "Wait a while and run it again.",
+                                ja=f"{label} に必要なシステムのライブラリ（{' '.join(spec['apt'])}）を入れられませんでした。",
+                                ja_hint="しばらく待ってからもう一度実行してください。")
     numpy_before = installed("numpy")
     if others:
         _pip_uninstall(others + ([keep] if installed(keep) else []), label)
     _pip(missing, label)
     # ノートは先に numpy を読み込んでいる。CuPy の条件で numpy の版が変わることがある
     if "cupy" in sys.modules or ("numpy" in sys.modules and installed("numpy") != numpy_before):
-        raise ColabUMAError("インストールは完了しましたが、読み込み済みのライブラリを入れ替えるためセッションの再起動が必要です。",
-                            "「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
+        raise ColabUMAError("Installation finished, but the session must restart to replace libraries that are already loaded.",
+                            "Use Runtime → Restart session, then run all again.",
+                            ja="インストールは完了しましたが、読み込み済みのライブラリを入れ替えるためセッションの再起動が必要です。",
+                            ja_hint="「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
     return True
 
 
@@ -139,27 +150,29 @@ def setup(extras=()):
     global DEVICE, _auth_ok
     if installed("fairchem-core") != FAIRCHEM_VERSION or not installed("py3Dmol"):
         torch_loaded_before = "torch" in sys.modules
-        print(f"ライブラリをインストールしています（fairchem-core {FAIRCHEM_VERSION}）。数分かかります…")
-        _pip([f"fairchem-core=={FAIRCHEM_VERSION}", "py3Dmol"], "ライブラリ")
+        print(f"Installing the libraries (fairchem-core {FAIRCHEM_VERSION}). This takes a few minutes…")
+        _pip([f"fairchem-core=={FAIRCHEM_VERSION}", "py3Dmol"], "the libraries")
         if torch_loaded_before:
-            raise ColabUMAError("インストールは完了しましたが、読み込み済みのライブラリを入れ替えるためセッションの再起動が必要です。",
-                                "「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
-        ok("インストールが完了しました。")
+            raise ColabUMAError("Installation finished, but the session must restart to replace libraries that are already loaded.",
+                                "Use Runtime → Restart session, then run all again.",
+                                ja="インストールは完了しましたが、読み込み済みのライブラリを入れ替えるためセッションの再起動が必要です。",
+                                ja_hint="「ランタイム → セッションを再起動」してから、もう一度すべて実行してください。")
+        ok("Installation finished.")
     else:
-        print(f"fairchem-core {FAIRCHEM_VERSION} はインストール済みです。スキップします。")
+        print(f"fairchem-core {FAIRCHEM_VERSION} is already installed. Skipping.")
     for name in extras:
         if _install_extra(name):
-            ok("追加のライブラリのインストールが完了しました。")
+            ok("Additional libraries installed.")
 
     if not _auth_ok:
         _check_hf_access()
         _auth_ok = True
-        ok("Hugging Faceの認証とfacebook/UMAへのアクセス権を確認しました。")
+        ok("Hugging Face login and access to facebook/UMA confirmed.")
 
     import torch
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    print("計算デバイス:", device_name())
+    print("Device:", device_name())
     return DEVICE
 
 
@@ -169,9 +182,9 @@ def setup_dft(drawing=False):
     global DEVICE
     for name in ("structure", "dft") + (("draw",) if drawing else ()):
         if _install_extra(name):
-            ok("ライブラリのインストールが完了しました。")
+            ok("Libraries installed.")
     DEVICE = "cuda" if has_gpu() else "cpu"
-    print("計算デバイス:", device_name())
+    print("Device:", device_name())
     return DEVICE
 
 
@@ -190,24 +203,31 @@ def _check_hf_access():
         whoami()
     except Exception as e:
         if getattr(getattr(e, "response", None), "status_code", None) == 401:
-            raise ColabUMAError("Hugging Faceのトークンが無効です。",
-                                "https://huggingface.co/settings/tokens でトークンを作り直し、シークレットのHF_TOKENを更新してください。") from None
-        raise ColabUMAError(f"Hugging Faceに接続できませんでした（{e}）。",
-                            "しばらく待ってからもう一度実行してください。") from None
+            raise ColabUMAError("The Hugging Face token is not valid.",
+                                "Create a new token at https://huggingface.co/settings/tokens and update HF_TOKEN in Secrets.",
+                                ja="Hugging Faceのトークンが無効です。",
+                                ja_hint="https://huggingface.co/settings/tokens でトークンを作り直し、シークレットのHF_TOKENを更新してください。") from None
+        raise ColabUMAError(f"Could not connect to Hugging Face ({e}).", "Wait a while and run it again.",
+                            ja=f"Hugging Faceに接続できませんでした（{e}）。",
+                            ja_hint="しばらく待ってからもう一度実行してください。") from None
     try:
         from huggingface_hub import auth_check
         auth_check("facebook/UMA")
     except ImportError:
         pass  # 古いhuggingface_hubでは確認を省略し、モデル読み込み時に判定する
     except GatedRepoError:
-        raise ColabUMAError("facebook/UMA を使う権限がまだありません。",
-                            "https://huggingface.co/facebook/UMA でアクセス申請してライセンスに同意し、承認されてからもう一度実行してください。") from None
+        raise ColabUMAError("You do not have access to facebook/UMA yet.",
+                            "Request access and accept the license at https://huggingface.co/facebook/UMA, then run again once approved.",
+                            ja="facebook/UMA を使う権限がまだありません。",
+                            ja_hint="https://huggingface.co/facebook/UMA でアクセス申請してライセンスに同意し、承認されてからもう一度実行してください。") from None
     except RepositoryNotFoundError:
-        raise ColabUMAError("Hugging Faceのトークンが無効です。",
-                            "トークンを作り直し、シークレットのHF_TOKENを更新してください。") from None
+        raise ColabUMAError("The Hugging Face token is not valid.", "Create a new token and update HF_TOKEN in Secrets.",
+                            ja="Hugging Faceのトークンが無効です。",
+                            ja_hint="トークンを作り直し、シークレットのHF_TOKENを更新してください。") from None
     except HfHubHTTPError as e:
-        raise ColabUMAError(f"Hugging Faceに接続できませんでした（{e}）。",
-                            "しばらく待ってからもう一度実行してください。") from None
+        raise ColabUMAError(f"Could not connect to Hugging Face ({e}).", "Wait a while and run it again.",
+                            ja=f"Hugging Faceに接続できませんでした（{e}）。",
+                            ja_hint="しばらく待ってからもう一度実行してください。") from None
 
 
 def load_calculator(model_name, task_name):
@@ -222,26 +242,32 @@ def load_calculator(model_name, task_name):
         gc.collect()
         if DEVICE == "cuda":
             torch.cuda.empty_cache()
-        print(f"{model_name} を読み込んでいます（初回はダウンロードに数分かかります）…")
+        print(f"Loading {model_name} (the first download takes a few minutes)…")
         try:
             predictor = pretrained_mlip.get_predict_unit(model_name, device=DEVICE)
         except GatedRepoError:
-            raise ColabUMAError("facebook/UMA を使う権限がまだありません。",
-                                "https://huggingface.co/facebook/UMA でアクセス申請してライセンスに同意し、承認されてからもう一度実行してください。") from None
+            raise ColabUMAError("You do not have access to facebook/UMA yet.",
+                                "Request access and accept the license at https://huggingface.co/facebook/UMA, then run again once approved.",
+                                ja="facebook/UMA を使う権限がまだありません。",
+                                ja_hint="https://huggingface.co/facebook/UMA でアクセス申請してライセンスに同意し、承認されてからもう一度実行してください。") from None
         except HfHubHTTPError as e:
             status = getattr(getattr(e, "response", None), "status_code", None)
             if status in (401, 403):
-                raise ColabUMAError("モデルのダウンロードが拒否されました（アクセス権がありません）。",
-                                    "https://huggingface.co/facebook/UMA でアクセス申請し、トークンが正しいか確認してください。") from None
-            raise ColabUMAError(f"モデルをダウンロードできませんでした（{e}）。",
-                                "しばらく待ってからもう一度実行してください。") from None
+                raise ColabUMAError("The model download was refused (no access).",
+                                    "Request access at https://huggingface.co/facebook/UMA and check that the token is correct.",
+                                    ja="モデルのダウンロードが拒否されました（アクセス権がありません）。",
+                                    ja_hint="https://huggingface.co/facebook/UMA でアクセス申請し、トークンが正しいか確認してください。") from None
+            raise ColabUMAError(f"Could not download the model ({e}).", "Wait a while and run it again.",
+                                ja=f"モデルをダウンロードできませんでした（{e}）。",
+                                ja_hint="しばらく待ってからもう一度実行してください。") from None
         except KeyError:
-            raise ColabUMAError(f"モデル名「{model_name}」はこのバージョンのfairchemにありません。",
-                                "フォームで別のモデルを選んでください。") from None
+            raise ColabUMAError(f"The model \"{model_name}\" is not in this version of fairchem.", "Choose another model in the form.",
+                                ja=f"モデル名「{model_name}」はこのバージョンのfairchemにありません。",
+                                ja_hint="フォームで別のモデルを選んでください。") from None
         _model.update(key=key, predictor=predictor)
-        ok(f"{model_name} を読み込みました。")
+        ok(f"{model_name} loaded.")
     else:
-        print(f"{model_name} は読み込み済みです。スキップします。")
+        print(f"{model_name} is already loaded. Skipping.")
     return FAIRChemCalculator(_model["predictor"], task_name=task_name)
 
 
@@ -264,7 +290,7 @@ def software_lines():
     from . import __version__
 
     commit = _colabchem_commit()
-    lines = [f"ColabChem {__version__}" + (f"（コミット {commit}）" if commit else ""),
+    lines = [f"ColabChem {__version__}" + (f" (commit {commit})" if commit else ""),
              f"Python {platform.python_version()}", f"ase {ase.__version__}"]
     for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "cupy-cuda12x", "cutensor-cu12", "pyscf", "rdkit"):
         if installed(pkg):
@@ -274,5 +300,5 @@ def software_lines():
         lines.append(f"torch {torch.__version__}")
     except ImportError:
         pass
-    lines += [f"numpy {np.__version__}", f"デバイス: {device_name() if DEVICE else '-'}"]
+    lines += [f"numpy {np.__version__}", f"Device: {device_name() if DEVICE else '-'}"]
     return lines

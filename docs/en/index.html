@@ -253,8 +253,8 @@ footer p { margin: 0 0 6px; }
         <li>When the file selection button appears, pick your structure file. You can leave it running after that</li>
         <li>Check the results and download the ZIP</li>
       </ol>
-      <p>In ColabDFT ESP and MO, setting the input in the form to 描く (draw) shows a structure editor (JSME) instead of the file selection. Draw the molecule and press 「この構造で計算」 (compute this structure): hydrogens are added and a 3D structure is made before the calculation.</p>
-      <p>The forms and messages in the notebooks are in Japanese. The <a href="https://github.com/RChibaChiba/ColabChem/blob/main/README.md">English README</a> gives the Japanese label next to each item.</p>
+      <p>In ColabDFT ESP and MO, setting <code>input_mode</code> in the form to draw shows a structure editor (JSME) instead of the file selection. Draw the molecule and press "Use this structure": hydrogens are added and a 3D structure is made before the calculation.</p>
+      <p>The forms, messages and logs in the notebooks are in English; error messages also show Japanese. The <a href="https://github.com/RChibaChiba/ColabChem/blob/main/README.md">English README</a> explains every form item.</p>
       <div class="note">
         <strong>First time only (all but ColabDFT):</strong>
         Request access at <a href="https://huggingface.co/facebook/UMA">facebook/UMA</a> and accept the FAIR Chemistry License v1. Once approved, create a <a href="https://huggingface.co/settings/tokens">token</a> with Read access. In Colab's left sidebar, open 🔑 (Secrets), add it with the name <code>HF_TOKEN</code>, and turn on notebook access.

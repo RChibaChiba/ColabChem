@@ -16,7 +16,7 @@
 
 Google Colab notebooks for geometry optimization, relaxed scans and transition state searches of molecules with Meta's machine learning potential **UMA**. Open a notebook in Colab and choose "Run all". You only need a structure (xyz or Gaussian gjf), the charge and the spin multiplicity.
 
-The notebooks' forms and messages are in Japanese. This README gives the Japanese label next to the English description where it helps you find an item.
+The notebooks' forms, messages and logs are in English. Error messages also show a Japanese translation. The explanation at the top of each notebook is in Japanese; this README covers the same content in English.
 
 <!-- TODO: add a screenshot (e.g. docs/screenshot.png) -->
 
@@ -53,9 +53,9 @@ If you don't add the secret, the notebook shows a token input box before the fil
 1. Open a notebook from its "Open in Colab" badge above
 2. Choose **Runtime → Change runtime type** and select **T4 GPU**
 3. First time only: add `HF_TOKEN` to the secrets and allow notebook access
-4. In "1. 入力フォーム" (input form), set the output name, charge, spin multiplicity and convergence criterion
+4. In "1. Input form", set the output name, charge, spin multiplicity and convergence criterion
 5. Choose **Runtime → Run all**
-6. A file selection button appears in "2. ファイル選択と事前確認" (file selection and checks). Choose an xyz or gjf file. From here on, the install and the calculation run unattended
+6. A file selection button appears in "2. File selection and checks". Choose an xyz or gjf file. From here on, the install and the calculation run unattended
 7. Check the 3D view, the energies and the convergence plot
 8. Download the ZIP of the results
 
@@ -72,7 +72,7 @@ For later runs, repeat steps 4–8. The install and the model load are skipped a
 | Task | omol | Only omol (molecules) in v1 |
 | Optimizer | LBFGS | LBFGS / BFGS / FIRE (ASE) |
 | Convergence | loose (0.05) | fmax (eV/Å). loose 0.05 / normal 0.02 (about Gaussian's default) / tight 0.001 (about Gaussian's opt=tight) / custom |
-| Custom fmax | 0.05 | Used when "数値指定" (custom) is chosen for the convergence |
+| Custom fmax | 0.05 | Used when "custom" is chosen for the convergence |
 | Max steps | 500 | |
 | Vibrational analysis | Off | If on, checks for imaginary frequencies after the optimization |
 | DFT single point | Off | Computes the DFT energy at the optimized structure (GPU4PySCF, density fitting). The structure stays the UMA one; it is not reoptimized with DFT |
@@ -111,7 +111,7 @@ From a Gaussian input file (.gjf / .com / .gjc), **only the structure** is read.
 
 The optimization after the scan comes back from a scan that overshot and finds the minimum. Bumps smaller than 0.1 kcal/mol and unconverged points are ignored. A note is shown if the energy still decreases at the end of the scan, or if it goes all the way back to the first point.
 
-If you don't know the atom numbers, run once: "5. 構造の準備" (structure preparation) shows a numbered 3D view.
+If you don't know the atom numbers, run once: "5. Prepare the structures" shows a numbered 3D view.
 
 | File | Contents |
 |---|---|
@@ -131,11 +131,11 @@ If you don't know the atom numbers, run once: "5. 構造の準備" (structure pr
 3. Vibrational analysis checks that there is exactly one imaginary frequency. The TS is displaced slightly along the imaginary mode in both directions and optimized, to check that it falls to structures with the same bonding as the reactant and the product (simple IRC check)
 4. **DFT single points** ([GPU4PySCF](https://github.com/pyscf/gpu4pyscf), density fitting) of the reactant, TS and product at the UMA structures, and the UMA and DFT activation energies side by side
 
-Give the reactant and the product as two files (xyz or gjf) with **the same atoms in the same order**. The `preopt.xyz` and `postopt.xyz` from a scan work as they are. If you already have a TS guess, choose "TSの初期構造（Sellaのみ）" (TS guess, Sella only) to skip DMF.
+Give the reactant and the product as two files (xyz or gjf) with **the same atoms in the same order**. The `preopt.xyz` and `postopt.xyz` from a scan work as they are. If you already have a TS guess, choose "TS guess (Sella only)" to skip DMF.
 
 | Item | Default | Description |
 |---|---|---|
-| `ts_input` | Reactant and product | "反応物と生成物（DMF → Sella）" (reactant and product) or "TSの初期構造（Sellaのみ）" (TS guess) |
+| `ts_input` | reactant and product (DMF → Sella) | "reactant and product (DMF → Sella)" or "TS guess (Sella only)" |
 | `opt_endpoints` | On | Optimizes the reactant and the product before DMF |
 | `dmf_nmove` | 5 | Number of points on the path where the energy is computed |
 | `dmf_convergence` | middle | DMF convergence (loose / middle / tight) |
@@ -166,7 +166,7 @@ Colab gives each notebook its own session (its own machine). If you go ColabUMA_
 
 [ColabUMA_Workflow.ipynb](ColabUMA_Workflow.ipynb) runs **optimization → scan → transition state → DFT single points** in a single session. Each stage passes its structures to the next in memory.
 
-- The optimized structure becomes the reactant and the structure optimized after the scan becomes the product for DMF (set `ts_source` to "スキャンの最高点から Sella" (Sella from the highest scan point) to skip DMF and start from the highest point of the scan)
+- The optimized structure becomes the reactant and the structure optimized after the scan becomes the product for DMF (set `ts_source` to "Sella from the scan maximum" to skip DMF and start from the highest point of the scan)
 - To redo only part of the run, edit the form and run from that cell down (**Runtime → Run after**). The install and the model load are skipped
 - All stages go into a single ZIP
 - After the transition state stage, a plot overlays the DMF path, TS guess, Sella TS and product on the scan's energy curve. The x axis is the scanned coordinate measured in each structure
@@ -197,9 +197,9 @@ If an xyz holds several structures, only the first is computed. Supported elemen
 
 | Item | Default | Description |
 |---|---|---|
-| `input_mode` | ファイル (file) | ファイル (file): choose an xyz or gjf. 描く (draw): draw the structure in an editor (JSME); hydrogens are added and RDKit makes the 3D structure (10 ETKDG conformers optimized with MMFF94, lowest one kept). The structure is not optimized further |
+| `input_mode` | file | file: choose an xyz or gjf. draw: draw the structure in an editor (JSME); hydrogens are added and RDKit makes the 3D structure (10 ETKDG conformers optimized with MMFF94, lowest one kept). The structure is not optimized further |
 | `isosurface` | 0.002 | Density of the isosurface that is colored (e/Bohr³) |
-| `grid_quality` | 標準 (standard) | Grid spacing. 粗い (coarse) 0.5 / 標準 (standard) 0.35 / 細かい (fine) 0.25 Bohr. Made coarser automatically for large molecules |
+| `grid_quality` | standard | Grid spacing. coarse 0.5 / standard 0.35 / fine 0.25 Bohr. Made coarser automatically for large molecules |
 | `esp_color_range` | 0 | Color range ± (kcal/mol). 0 means automatic. Use the same value when comparing molecules |
 
 | File | Contents |
@@ -216,10 +216,10 @@ If an xyz holds several structures, only the first is computed. Supported elemen
 
 | Item | Default | Description |
 |---|---|---|
-| `input_mode` | ファイル (file) | ファイル (file): choose an xyz or gjf. 描く (draw): draw the structure in an editor (JSME); hydrogens are added and RDKit makes the 3D structure (10 ETKDG conformers optimized with MMFF94, lowest one kept). The structure is not optimized further |
+| `input_mode` | file | file: choose an xyz or gjf. draw: draw the structure in an editor (JSME); hydrogens are added and RDKit makes the 3D structure (10 ETKDG conformers optimized with MMFF94, lowest one kept). The structure is not optimized further |
 | `orbitals` | HOMO, LUMO | Orbitals to show, separated by commas. `HOMO-1`, `LUMO+2` and orbital numbers (from 1, lowest energy first) also work. Up to 8 at a time |
 | `isovalue` | 0.02 | Isosurface value ± (Bohr^-3/2). Same as the GaussView default |
-| `grid_quality` | 標準 (standard) | Grid spacing. 粗い (coarse) 0.5 / 標準 (standard) 0.35 / 細かい (fine) 0.25 Bohr. Made coarser automatically for large molecules |
+| `grid_quality` | standard | Grid spacing. coarse 0.5 / standard 0.35 / fine 0.25 Bohr. Made coarser automatically for large molecules |
 
 | File | Contents |
 |---|---|
@@ -237,7 +237,7 @@ DFT is skipped when:
 
 - **Memory is expected to run out.** Before starting, the notebook estimates the size of the three-center integrals for density fitting. gpu4pyscf keeps them in GPU memory, or in CPU memory if they do not fit. If CPU memory also runs out, Colab does not raise an error: the runtime crashes and the UMA results are lost too. When that looks likely, DFT is skipped without starting
 - **Memory runs out during the calculation** (for example a GPU out-of-memory error)
-- **The time limit is exceeded.** When "DFT の時間の上限" (DFT time limit, default 60 min, total over all structures) has passed, the calculation stops, even in the middle of an SCF. If the next structure would take as long as the previous one and cannot finish in time, it is not started
+- **The time limit is exceeded.** When the DFT time limit (default 60 min, total over all structures) has passed, the calculation stops, even in the middle of an SCF. If the next structure would take as long as the previous one and cannot finish in time, it is not started
 - **The Colab runtime is about to end.** A free Colab runtime lasts at most about 12 hours. DFT that would not finish 15 minutes before 12 hours from the start of the runtime is stopped (even with the limit set to 0)
 - Any other error occurs in the DFT calculation
 
@@ -253,7 +253,7 @@ About Colab timeouts:
 
 ## Code layout
 
-Notebook cells only take the form values and call functions. The calculations live in the [`colabuma/`](colabuma) package of this repository. In "2. ファイル選択と事前確認" (file selection and checks), each notebook fetches this repository into Colab (`git clone`) and imports it. Adding a notebook does not duplicate the shared code, and a fix goes in one place.
+Notebook cells only take the form values and call functions. The calculations live in the [`colabuma/`](colabuma) package of this repository. In "2. File selection and checks", each notebook fetches this repository into Colab (`git clone`) and imports it. Adding a notebook does not duplicate the shared code, and a fix goes in one place.
 
 | Module | Contents |
 |---|---|
@@ -338,8 +338,8 @@ This repository does not include the software below. When a notebook runs, it is
 | [cuTENSOR](https://developer.nvidia.com/cutensor) (`cutensor-cu12`) | Opt, TS, Workflow (DFT), ColabDFT | NVIDIA proprietary license |
 | [PySCF](https://github.com/pyscf/pyscf) | Opt, TS, Workflow (DFT), ColabDFT | Apache-2.0 |
 | [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt, TS, Workflow (DFT), ColabDFT | Apache-2.0 |
-| [RDKit](https://github.com/rdkit/rdkit) | ColabDFT ESP and MO (only with the 描く (draw) input) | BSD-3-Clause |
-| [JSME](https://jsme-editor.github.io/) (structure editor; not installed, the browser loads it from jsDelivr when shown) | ColabDFT ESP and MO (only with the 描く (draw) input) | BSD-3-Clause |
+| [RDKit](https://github.com/rdkit/rdkit) | ColabDFT ESP and MO (only with the draw input) | BSD-3-Clause |
+| [JSME](https://jsme-editor.github.io/) (structure editor; not installed, the browser loads it from jsDelivr when shown) | ColabDFT ESP and MO (only with the draw input) | BSD-3-Clause |
 
 These licenses are as stated by each package's distribution (PyPI and Ubuntu packages) as of November 2026. Libraries they depend on (PyTorch, NumPy, SciPy, etc.) are installed as well. Check each distribution for the exact terms.
 

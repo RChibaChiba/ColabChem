@@ -1,6 +1,6 @@
 <!-- 分子軌道のエネルギー準位図と 3D 表示。mo.explorer が __URL__ と __DATA__ を置き換えて表示する。 -->
 <div id="__UID__" class="mo-explorer" style="font-family:sans-serif;font-size:13px;color:#222">
-  <div style="color:#555;margin-bottom:4px">準位図の線（エネルギーは eV）かボタンをクリックすると、その軌道を表示します。実線は占有、点線は空の軌道です。</div>
+  <div style="color:#555;margin-bottom:4px">Click a level in the diagram (energies in eV) or a button to show that orbital. Solid lines are occupied, dashed lines are empty.</div>
   <div class="mo-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px"></div>
   <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start">
     <div>
@@ -10,9 +10,9 @@
       <div class="mo-title" style="font-weight:bold;min-height:1.4em;margin-bottom:2px"></div>
       <div class="mo-viewer" style="position:relative;width:520px;height:420px;border:1px solid #ddd;border-radius:6px"></div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-        <span>等値面 ±</span>
+        <span>Isovalue ±</span>
         <select class="mo-iso"></select>
-        <span style="color:#555">Bohr<sup>-3/2</sup>　<span style="color:#1f4fd8">■</span> 正　<span style="color:#d62728">■</span> 負</span>
+        <span style="color:#555">Bohr<sup>-3/2</sup>　<span style="color:#1f4fd8">■</span> positive　<span style="color:#d62728">■</span> negative</span>
       </div>
       <div class="mo-status" style="color:#8a5300;min-height:1.4em;margin-top:4px"></div>
     </div>
@@ -79,8 +79,8 @@
         const arrows = o.occ > 1.5 ? "↑↓" : occupied ? (spin.name === "β" ? "↓" : "↑") : "";
         if (arrows) el("text", { x: x + LINE / 2, y: yy + 4, "text-anchor": "middle", "font-size": 11, fill: "#1a73e8",
           "pointer-events": "none" }, hit).textContent = arrows;
-        el("title", {}, hit).textContent = `${o.label}${spin.name ? "（" + spin.name + "）" : ""}　${o.i + 1} 番\n` +
-          `${o.e.toFixed(3)} eV、占有数 ${+o.occ.toFixed(3)}`;
+        el("title", {}, hit).textContent = `${o.label}${spin.name ? " (" + spin.name + ")" : ""}  No. ${o.i + 1}\n` +
+          `${o.e.toFixed(3)} eV, occupation ${+o.occ.toFixed(3)}`;
         hit.addEventListener("click", () => select(key, o, spin.name));
       });
       const bold = g.some((o) => /^(HOMO|LUMO)$/.test(o.label));
@@ -93,7 +93,7 @@
   // --- 指定した軌道のボタン ---
   for (const c of D.chips) {
     const b = document.createElement("button");
-    b.textContent = `${c.name}（${c.e.toFixed(2)} eV）`;
+    b.textContent = `${c.name} (${c.e.toFixed(2)} eV)`;
     b.style.cssText = "padding:3px 10px;border:1px solid #bbb;border-radius:14px;background:#fff;cursor:pointer;font-size:12px";
     b.dataset.key = c.key;
     b.addEventListener("click", () => {
@@ -121,7 +121,7 @@
     const iso = parseFloat(isoSel.value);
     if (current.range[1] > iso) viewer.addIsosurface(current.vol, { isoval: iso, color: D.pos, opacity: 0.85, smoothness: 3 });
     if (current.range[0] < -iso) viewer.addIsosurface(current.vol, { isoval: -iso, color: D.neg, opacity: 0.85, smoothness: 3 });
-    if (current.range[1] <= iso && current.range[0] >= -iso) status("この等値面の値では面がありません。値を小さくしてください。");
+    if (current.range[1] <= iso && current.range[0] >= -iso) status("No surface at this isovalue. Choose a smaller value.");
     viewer.render();
   }
 
@@ -139,22 +139,22 @@
   async function select(key, o, spinName) {
     selectedKey = key;
     highlight(key);
-    $(".mo-title").textContent = `${o.label}${spinName ? "（" + spinName + "）" : ""}　${o.i + 1} 番、` +
-      `${o.e.toFixed(3)} eV、占有数 ${+o.occ.toFixed(3)}`;
+    $(".mo-title").textContent = `${o.label}${spinName ? " (" + spinName + ")" : ""}  No. ${o.i + 1}, ` +
+      `${o.e.toFixed(3)} eV, occupation ${+o.occ.toFixed(3)}`;
     status("");
     if (!volumes[key]) {
       let cube = D.cubes[key];
       if (!cube) {
         const kernel = window.google && google.colab && google.colab.kernel;
-        if (!kernel) { status("この軌道は Colab のランタイムにつながっているときだけ計算できます。"); return; }
-        status("計算中…");
+        if (!kernel) { status("This orbital can only be computed while the Colab runtime is connected."); return; }
+        status("Computing…");
         try {
           const r = await kernel.invokeFunction("colabchem.mo_cube", key.split(":").map(Number), {});
           const res = r.data["application/json"];
           if (res.error) { status(res.error); return; }
           cube = res.cube;
         } catch (e) {
-          status("計算できませんでした。ランタイムが切れているときは、「軌道の計算」のセルから実行し直してください。");
+          status("Could not compute it. If the runtime has disconnected, run again from the orbital calculation cell.");
           return;
         }
         status("");
@@ -187,7 +187,7 @@
   const tag = document.createElement("script");
   tag.src = "__URL__";
   tag.onload = () => { window.exports = savedExports; window.module = savedModule; ready(); };
-  tag.onerror = () => status("3Dmol.js を読み込めませんでした。");
+  tag.onerror = () => status("Could not load 3Dmol.js.");
   document.head.appendChild(tag);
 })();
 </script>

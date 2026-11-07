@@ -7,14 +7,16 @@ from . import gaussian, opt
 from .structure import show_animation, show_numbered, xyz_block
 from .ui import ColabUMAError, ProgressDisplay, bar_row, ok, warn
 
-SCAN_KINDS = {2: ("R", "結合長", "Å", "Distance (Å)"), 3: ("A", "角度", "度", "Angle (deg)"),
-              4: ("D", "二面角", "度", "Dihedral (deg)")}
+SCAN_KINDS = {2: ("R", "bond length", "Å", "Distance (Å)"), 3: ("A", "angle", "deg", "Angle (deg)"),
+              4: ("D", "dihedral", "deg", "Dihedral (deg)")}
 SCAN_TOLERANCE = 0.01  # Å または 度。目標値と実測値の差がこれを超えたら注意を出す
 MIN_PROMINENCE = 0.1  # kcal/mol。極小を探すとき、これより小さい凹凸は無視する
 EV_PER_KCALMOL = 0.043364104241800934  # ase.units.kcal / ase.units.mol
 
-_ATOMS_HINT = "2個なら結合長、3個なら角度、4個なら二面角です（例：1 2 3 4）。"
-_COLLINEAR_HINT = "原子の指定を変えてください。直線に近い原子の組では、角度や二面角を決められません。"
+_ATOMS_HINT = "2 atoms give a bond length, 3 an angle, 4 a dihedral (for example 1 2 3 4)."
+_ATOMS_HINT_JA = "2個なら結合長、3個なら角度、4個なら二面角です（例：1 2 3 4）。"
+_COLLINEAR_HINT = "Choose other atoms. An angle or dihedral is not defined for nearly collinear atoms."
+_COLLINEAR_HINT_JA = "原子の指定を変えてください。直線に近い原子の組では、角度や二面角を決められません。"
 
 
 def wrap180(v):
@@ -53,32 +55,42 @@ def parse_spec(scan_atoms, scan_start, n_steps, step_size, opt_before=True, opt_
     try:
         idx = [int(t) - 1 for t in scan_atoms.replace(",", " ").split()]
     except ValueError:
-        raise ColabUMAError(f"scan_atoms「{scan_atoms}」を原子番号として読み取れませんでした。", _ATOMS_HINT) from None
+        raise ColabUMAError(f"Could not read scan_atoms \"{scan_atoms}\" as atom numbers.", _ATOMS_HINT,
+                            ja=f"scan_atoms「{scan_atoms}」を原子番号として読み取れませんでした。", ja_hint=_ATOMS_HINT_JA) from None
     if len(idx) not in (2, 3, 4):
-        raise ColabUMAError(f"scan_atoms には原子番号を2〜4個指定してください（今は {len(idx)} 個です）。", _ATOMS_HINT)
+        raise ColabUMAError(f"Give 2–4 atom numbers in scan_atoms (now {len(idx)}).", _ATOMS_HINT,
+                            ja=f"scan_atoms には原子番号を2〜4個指定してください（今は {len(idx)} 個です）。", ja_hint=_ATOMS_HINT_JA)
     if min(idx) < 0:
-        raise ColabUMAError(f"scan_atoms の原子番号は1以上で指定してください（今は {scan_atoms} です）。", _ATOMS_HINT)
+        raise ColabUMAError(f"Atom numbers in scan_atoms start at 1 (now {scan_atoms}).", _ATOMS_HINT,
+                            ja=f"scan_atoms の原子番号は1以上で指定してください（今は {scan_atoms} です）。", ja_hint=_ATOMS_HINT_JA)
     if len(set(idx)) != len(idx):
-        raise ColabUMAError(f"scan_atoms に同じ原子番号が入っています（{scan_atoms}）。", _ATOMS_HINT)
+        raise ColabUMAError(f"scan_atoms has the same atom number twice ({scan_atoms}).", _ATOMS_HINT,
+                            ja=f"scan_atoms に同じ原子番号が入っています（{scan_atoms}）。", ja_hint=_ATOMS_HINT_JA)
     if n_steps < 1:
-        raise ColabUMAError("刻みの回数は1以上にしてください。", "計算する点の数は、刻みの回数に1を足した数です。")
+        raise ColabUMAError("The number of steps must be 1 or more.", "The number of points is the number of steps plus 1.",
+                            ja="刻みの回数は1以上にしてください。", ja_hint="計算する点の数は、刻みの回数に1を足した数です。")
     if step_size == 0:
-        raise ColabUMAError("刻み幅に0は指定できません。", "結合長なら 0.1 Å、角度や二面角なら 10 度 程度が目安です。")
+        raise ColabUMAError("The step size cannot be 0.", "About 0.1 Å for a bond length, or 10 deg for an angle or dihedral.",
+                            ja="刻み幅に0は指定できません。", ja_hint="結合長なら 0.1 Å、角度や二面角なら 10 度 程度が目安です。")
     start = None
     if str(scan_start).strip():
         try:
             start = float(scan_start)
         except ValueError:
-            raise ColabUMAError(f"scan_start「{scan_start}」を数値として読み取れませんでした。",
-                                "空欄にすると入力構造の値から始めます。") from None
+            raise ColabUMAError(f"Could not read scan_start \"{scan_start}\" as a number.",
+                                "Leave it empty to start from the value in the input structure.",
+                                ja=f"scan_start「{scan_start}」を数値として読み取れませんでした。",
+                                ja_hint="空欄にすると入力構造の値から始めます。") from None
     if len(idx) == 4 and abs(n_steps * step_size) > 360.0 + 1e-6:
-        warn("二面角を1回転より多く動かす設定です。同じ角度を重複して計算します。")
+        warn("The dihedral moves more than one full turn. Some angles are computed twice.")
     return ScanSpec(idx, start, n_steps, step_size, opt_before, opt_after, scan_atoms)
 
 
 def check_atom_range(spec, n_atoms, hint):
     if n_atoms and max(spec.idx) >= n_atoms:
-        raise ColabUMAError(f"scan_atoms の原子番号は1〜{n_atoms}の範囲で指定してください（今は {spec.text} です）。", hint)
+        raise ColabUMAError(f"Atom numbers in scan_atoms must be 1–{n_atoms} (now {spec.text}).", hint,
+                            ja=f"scan_atoms の原子番号は1〜{n_atoms}の範囲で指定してください（今は {spec.text} です）。",
+                            ja_hint="3D表示で番号を確認してください。")
 
 
 class Scan:
@@ -116,12 +128,16 @@ class Scan:
     def check_geometry(self, atoms):
         s = self.spec
         if s.code == "A" and not 1.0 < atoms.get_angle(*s.idx) < 179.0:
-            raise ColabUMAError(f"指定した3原子がほぼ直線上に並んでいます（{atoms.get_angle(*s.idx):.1f} 度）。", _COLLINEAR_HINT)
+            raise ColabUMAError(f"The three atoms are nearly collinear ({atoms.get_angle(*s.idx):.1f} deg).", _COLLINEAR_HINT,
+                                ja=f"指定した3原子がほぼ直線上に並んでいます（{atoms.get_angle(*s.idx):.1f} 度）。",
+                                ja_hint=_COLLINEAR_HINT_JA)
         if s.code == "D":
             for tri in (s.idx[:3], s.idx[1:]):
                 if not 5.0 < atoms.get_angle(*tri) < 175.0:
-                    raise ColabUMAError(f"二面角を作る3原子（{' '.join(str(i + 1) for i in tri)}）がほぼ直線上に並んでいます。",
-                                        _COLLINEAR_HINT)
+                    raise ColabUMAError(f"Three atoms of the dihedral ({' '.join(str(i + 1) for i in tri)}) are nearly collinear.",
+                                        _COLLINEAR_HINT,
+                                        ja=f"二面角を作る3原子（{' '.join(str(i + 1) for i in tri)}）がほぼ直線上に並んでいます。",
+                                        ja_hint=_COLLINEAR_HINT_JA)
 
     def value(self, atoms):
         s = self.spec
@@ -136,10 +152,14 @@ class Scan:
         start = self.value(atoms) if s.start is None else s.start
         targets = [start + k * s.step_size for k in range(s.n_steps + 1)]
         if s.code == "R" and min(targets) < 0.3:
-            raise ColabUMAError(f"結合長が {min(targets):.3f} Å まで短くなる設定です。", "開始値、刻みの回数、刻み幅を見直してください。")
+            raise ColabUMAError(f"The bond length would shrink to {min(targets):.3f} Å.",
+                                "Check the start value, the number of steps and the step size.",
+                                ja=f"結合長が {min(targets):.3f} Å まで短くなる設定です。", ja_hint="開始値、刻みの回数、刻み幅を見直してください。")
         if s.code == "A" and not (0.0 < min(targets) and max(targets) < 180.0):
-            raise ColabUMAError(f"角度が {min(targets):.1f}〜{max(targets):.1f} 度の範囲を動く設定です。",
-                                "角度は0度と180度を含まない範囲で指定してください。180度ちょうどでは拘束を定義できません。")
+            raise ColabUMAError(f"The angle would move over {min(targets):.1f}–{max(targets):.1f} deg.",
+                                "Keep the angle strictly between 0 and 180 deg. The constraint is not defined at exactly 180 deg.",
+                                ja=f"角度が {min(targets):.1f}〜{max(targets):.1f} 度の範囲を動く設定です。",
+                                ja_hint="角度は0度と180度を含まない範囲で指定してください。180度ちょうどでは拘束を定義できません。")
         return targets
 
     def drive(self, atoms, target):
@@ -169,17 +189,18 @@ class Scan:
 def prepare(spec, atoms0, show=True):
     """番号付きの3D表示を出し、スキャン座標を確かめて Scan を返す。"""
     if show:
-        print("原子番号（赤がスキャンに指定した原子です）：")
+        print("Atom numbers (red: the scanned atoms):")
         show_numbered(atoms0, spec.idx)
-    check_atom_range(spec, len(atoms0), "上の3D表示で番号を確認してください。")
+    check_atom_range(spec, len(atoms0), "Check the numbers in the 3D view above.")
     sc = Scan(spec, atoms0)
     sc.check_geometry(atoms0)
     targets = sc.targets(atoms0)
     if sc.in_ring:
-        warn(f"指定した{spec.name}は環の中にあるため、原子 {spec.idx[-1] + 1} だけを動かして各点を始めます。"
-             "各点の初期構造が大きくひずむことがあります。",
-             "エネルギーが不連続になるときは、刻み幅を小さくしてください。")
-    ok(f"{spec.name} {spec.atoms_label} を {len(targets)} 点スキャンします（入力構造の値 {sc.value(atoms0):.3f} {spec.unit}）。")
+        warn(f"The {spec.name} is in a ring, so only atom {spec.idx[-1] + 1} is moved to start each point. "
+             "The starting structures can be strongly distorted.",
+             "If the energy jumps, use a smaller step size.")
+    ok(f"Scanning the {spec.name} {spec.atoms_label} over {len(targets)} points "
+       f"(value in the input structure: {sc.value(atoms0):.3f} {spec.unit}).")
     return sc
 
 
@@ -203,13 +224,13 @@ def run(sc, atoms0, calc, job, skip_preopt_result=None):
     state = {"done": 0, "n": len(sc.targets(atoms0))}
 
     def extra_rows():
-        return [bar_row("スキャン", state["done"] / state["n"], f"{state['done']}/{state['n']} 点完了")]
+        return [bar_row("Scan", state["done"] / state["n"], f"{state['done']}/{state['n']} points done")]
 
     def free_opt(start_atoms, label):
         r = opt.optimize(start_atoms, calc, job, label, progress=progress, extra_rows=extra_rows, quiet=True)
         r["value"] = sc.value(r["atoms"])
         print(f"  {label}: {spec.name} = {r['value']:.3f} {spec.unit}  E = {r['energy']:.6f} eV  fmax = {r['fmax']:.4f} eV/Å  "
-              f"{r['steps']:4d} ステップ  {'収束' if r['converged'] else '未収束'}（{r['seconds']:.1f} 秒）")
+              f"{r['steps']:4d} steps  {'converged' if r['converged'] else 'NOT converged'} ({r['seconds']:.1f} s)")
         return r
 
     pre_result = None
@@ -218,26 +239,26 @@ def run(sc, atoms0, calc, job, skip_preopt_result=None):
         pre_result = dict(skip_preopt_result, value=sc.value(skip_preopt_result["atoms"]))
         current = pre_result["atoms"]
     elif spec.opt_before:
-        print(f"スキャンの前に {job.optimizer_name} で最適化します（fmax < {job.fmax} eV/Å、最大 {job.max_steps} ステップ）")
-        pre_result = free_opt(atoms0, "前の最適化")
+        print(f"Optimizing with {job.optimizer_name} before the scan (fmax < {job.fmax} eV/Å, at most {job.max_steps} steps)")
+        pre_result = free_opt(atoms0, "Pre-scan optimization")
         current = pre_result["atoms"]
     sc.check_geometry(current)
     targets = sc.targets(current)
     state["n"] = len(targets)
 
-    print(f"{job.optimizer_name} で各点を最適化します（fmax < {job.fmax} eV/Å、1点あたり最大 {job.max_steps} ステップ）")
+    print(f"Optimizing each point with {job.optimizer_name} (fmax < {job.fmax} eV/Å, at most {job.max_steps} steps per point)")
     results = []
     for k, target in enumerate(targets):
         atoms = current.copy()
         atoms.set_constraint()
         sc.drive(atoms, target)
         atoms.set_constraint(sc.constraint(target))
-        r = opt.run(atoms, calc, job, f"点 {k + 1}", progress=progress, extra_rows=extra_rows, quiet=True)
+        r = opt.run(atoms, calc, job, f"Point {k + 1}", progress=progress, extra_rows=extra_rows, quiet=True)
         value = sc.value(atoms)
         deviation = wrap180(value - target) if spec.code == "D" else value - target
-        print(f"  点 {k + 1:3d}/{len(targets)}: {spec.name} = {target:9.3f} {spec.unit}  E = {r['energy']:.6f} eV  "
-              f"fmax = {r['fmax']:.4f} eV/Å  {r['steps']:4d} ステップ  {'収束' if r['converged'] else '未収束'}"
-              f"（{r['seconds']:.1f} 秒）")
+        print(f"  Point {k + 1:3d}/{len(targets)}: {spec.name} = {target:9.3f} {spec.unit}  E = {r['energy']:.6f} eV  "
+              f"fmax = {r['fmax']:.4f} eV/Å  {r['steps']:4d} steps  {'converged' if r['converged'] else 'NOT converged'}"
+              f" ({r['seconds']:.1f} s)")
         r.update({"point": k + 1, "target": target, "value": target + deviation, "deviation": deviation})
         results.append(r)
         current = r["atoms"]
@@ -247,8 +268,9 @@ def run(sc, atoms0, calc, job, skip_preopt_result=None):
     post_result = post_index = None
     if spec.opt_after:
         post_index = last_minimum_index([r["energy"] for r in results], [r["converged"] for r in results])
-        print(f"最後の点からさかのぼって最初の極小は点 {post_index + 1} です。ここから拘束なしで最適化します。")
-        post_result = free_opt(results[post_index]["atoms"], "後の最適化")
+        print(f"Going back from the last point, the first minimum is point {post_index + 1}. "
+              "It is optimized from there without constraints.")
+        post_result = free_opt(results[post_index]["atoms"], "Post-scan optimization")
 
     usable = [r for r in results if r["converged"]] or results  # 未収束の点のエネルギーは基準にしない
     lowest = min(usable, key=lambda r: r["energy"])
@@ -379,37 +401,38 @@ def report(res, job, atoms0):
 
     # --- 表 ---
     display(pd.DataFrame([{
-        "点": r["point"],
-        f"目標値 ({spec.unit})": round(r["target"], 4),
-        f"実測値 ({spec.unit})": round(r["value"], 4),
-        "エネルギー (eV)": round(r["energy"], 6),
-        "エネルギー (Hartree)": round(r["energy"] / eh, 8),
+        "Point": r["point"],
+        f"Target ({spec.unit})": round(r["target"], 4),
+        f"Actual ({spec.unit})": round(r["value"], 4),
+        "Energy (eV)": round(r["energy"], 6),
+        "Energy (Hartree)": round(r["energy"] / eh, 8),
         "ΔE (kcal/mol)": round(r["dE"], 3),
         "fmax (eV/Å)": round(r["fmax"], 4),
-        "ステップ数": r["steps"],
-        "収束": "はい" if r["converged"] else "いいえ",
-        "": " ".join(t for t, c in (("最安定", r is lowest), ("最高点", r is highest),
-                                    ("後の最適化の開始点", post_index == r["point"] - 1)) if c),
+        "Steps": r["steps"],
+        "Converged": "yes" if r["converged"] else "no",
+        "": " ".join(t for t, c in (("lowest", r is lowest), ("highest", r is highest),
+                                    ("post-scan opt start", post_index == r["point"] - 1)) if c),
     } for r in results]).style.hide(axis="index"))
 
-    print(f"最安定: 点 {lowest['point']}（{lowest['target']:.3f} {spec.unit}）  "
-          f"最高点: 点 {highest['point']}（{highest['target']:.3f} {spec.unit}）  "
-          f"高さ {highest['dE']:.2f} kcal/mol")
+    print(f"Lowest: point {lowest['point']} ({lowest['target']:.3f} {spec.unit})  "
+          f"Highest: point {highest['point']} ({highest['target']:.3f} {spec.unit})  "
+          f"height {highest['dE']:.2f} kcal/mol")
 
     if bad:
-        warn(f"最大ステップ数（{job.max_steps}）までに収束しなかった点が {len(bad)} 個あります："
-             f"{', '.join(str(r['point']) for r in bad)}。これらの点のエネルギーは信頼できないため、"
-             "scan.xyz と scan.log には入れていません（scan.log の点の番号は収束した点だけで振り直しています）。",
-             "最大ステップ数を増やすか、fmax を緩めるか、刻み幅を小さくしてもう一度実行してください。")
+        warn(f"{len(bad)} points did not converge within the maximum steps ({job.max_steps}): "
+             f"{', '.join(str(r['point']) for r in bad)}. Their energies are not reliable, so they are left out of "
+             "scan.xyz and scan.log (scan.log numbers only the converged points).",
+             "Increase the maximum steps, loosen fmax, or use a smaller step size, then run again.")
     off = [r for r in results if abs(r["deviation"]) > SCAN_TOLERANCE]
     if off:
-        warn(f"目標値から {SCAN_TOLERANCE} {spec.unit} より大きくずれた点が {len(off)} 個あります："
-             f"{', '.join(str(r['point']) for r in off)}。", "刻み幅を小さくしてもう一度実行してください。")
+        warn(f"{len(off)} points are more than {SCAN_TOLERANCE} {spec.unit} off their target: "
+             f"{', '.join(str(r['point']) for r in off)}.", "Use a smaller step size and run again.")
     if spec.code == "D" and abs(abs(spec.n_steps * spec.step_size) - 360.0) < 1e-6:
         gap = abs(results[-1]["dE"] - results[0]["dE"])
         if gap > 0.5:
-            warn(f"1回転して同じ角度に戻ったのに、エネルギーが {gap:.2f} kcal/mol 違います。途中で別の配座に移った可能性があります。",
-                 "逆向きにもスキャンして比較するか、刻み幅を小さくしてください。")
+            warn(f"After a full turn back to the same angle, the energy differs by {gap:.2f} kcal/mol. "
+                 "The scan may have moved to another conformer.",
+                 "Scan in the opposite direction too and compare, or use a smaller step size.")
 
     # --- 前後の最適化の結果 ---
     free = [r for r in (pre_result, post_result) if r is not None]
@@ -417,23 +440,23 @@ def report(res, job, atoms0):
         display(pd.DataFrame([{
             "": r["label"],
             f"{spec.name} ({spec.unit})": round(r["value"], 4),
-            "エネルギー (eV)": round(r["energy"], 6),
-            "エネルギー (Hartree)": round(r["energy"] / eh, 8),
-            f"ΔE（{free[0]['label']}基準, kcal/mol）": round((r["energy"] - free[0]["energy"]) / EV_PER_KCALMOL, 3),
+            "Energy (eV)": round(r["energy"], 6),
+            "Energy (Hartree)": round(r["energy"] / eh, 8),
+            f"ΔE (vs {free[0]['label']}, kcal/mol)": round((r["energy"] - free[0]["energy"]) / EV_PER_KCALMOL, 3),
             "fmax (eV/Å)": round(r["fmax"], 4),
-            "ステップ数": r["steps"],
-            "収束": "はい" if r["converged"] else "いいえ",
+            "Steps": r["steps"],
+            "Converged": "yes" if r["converged"] else "no",
         } for r in free]).style.hide(axis="index"))
         for r in free:
             if not r["converged"]:
-                warn(f"{r['label']}は最大ステップ数（{job.max_steps}）までに収束しませんでした。",
-                     "最大ステップ数を増やすか、fmax を緩めてもう一度実行してください。")
+                warn(f"{r['label']} did not converge within the maximum steps ({job.max_steps}).",
+                     "Increase the maximum steps or loosen fmax, then run again.")
     if post_index == len(results) - 1:
-        warn("スキャンの最後の点が極小として選ばれました。スキャンの端でもエネルギーが下がり続けていた可能性があります。",
-             "スキャンの範囲を広げて、極小を過ぎるところまで動かすと確実です。")
+        warn("The last scan point was picked as the minimum. The energy may still have been falling at the end of the scan.",
+             "Extend the scan range past the minimum to be sure.")
     elif post_index == 0:
-        warn("さかのぼって最初の点まで戻りました。スキャンの途中に極小が見つからなかったため、後の最適化は出発点の谷に戻っています。",
-             "スキャンの範囲を見直してください。")
+        warn("Going back reached the first point. No minimum was found along the scan, so the post-scan optimization "
+             "returns to the starting valley.", "Check the scan range.")
 
     # --- 各点の構造のアニメーション ---
     if converged_results:
@@ -451,7 +474,7 @@ def report(res, job, atoms0):
         files["scan.xyz"] = scan_xyz
         files["scan.log"] = gaussian_scan_log(res, job, atoms0.numbers, converged_results)
     else:
-        warn("収束した点がないため、scan.xyz と scan.log は作りませんでした。")
+        warn("No point converged, so scan.xyz and scan.log were not written.")
     for tag, r in (("preopt", pre_result), ("postopt", post_result)):
         if r is not None:
             files[f"{tag}.xyz"] = xyz_block(symbols, r["atoms"].positions,
@@ -460,21 +483,23 @@ def report(res, job, atoms0):
                                             f"fmax={r['fmax']:.5f} converged={r['converged']}")
             files[f"{tag}.log"] = gaussian.opt_log(r, job, atoms0.numbers, program="ColabUMA Scan")
 
-    log = ["[スキャン条件]",
-           f"スキャン座標: {spec.name} {spec.atoms_label}",
-           f"開始値: {res['targets'][0]:.4f} {spec.unit}", f"刻みの回数: {spec.n_steps}", f"刻み幅: {spec.step_size} {spec.unit}",
-           f"前の最適化: {'オン' if pre_result is not None else 'オフ'}", f"後の最適化: {'オン' if spec.opt_after else 'オフ'}",
+    log = ["[Scan settings]",
+           f"Scan coordinate: {spec.name} {spec.atoms_label}",
+           f"Start: {res['targets'][0]:.4f} {spec.unit}", f"Number of steps: {spec.n_steps}",
+           f"Step size: {spec.step_size} {spec.unit}",
+           f"Pre-scan optimization: {'on' if pre_result is not None else 'off'}",
+           f"Post-scan optimization: {'on' if spec.opt_after else 'off'}",
            "",
-           "[スキャンの結果]",
-           f"最安定: 点 {lowest['point']}  E = {lowest['energy']:.8f} eV ({lowest['energy'] / eh:.10f} Ha)",
-           f"最高点: 点 {highest['point']}  E = {highest['energy']:.8f} eV ({highest['energy'] / eh:.10f} Ha)"]
+           "[Scan result]",
+           f"Lowest: point {lowest['point']}  E = {lowest['energy']:.8f} eV ({lowest['energy'] / eh:.10f} Ha)",
+           f"Highest: point {highest['point']}  E = {highest['energy']:.8f} eV ({highest['energy'] / eh:.10f} Ha)"]
     if post_index is not None:
-        log.append(f"後の最適化の開始点: 点 {post_index + 1}")
+        log.append(f"Post-scan optimization starts from: point {post_index + 1}")
     for r in free:
         log.append(f"{r['label']}: {spec.name} = {r['value']:.4f} {spec.unit}  E = {r['energy']:.8f} eV "
                    f"({r['energy'] / eh:.10f} Ha)  fmax = {r['fmax']:.5f}  steps = {r['steps']}  converged = {r['converged']}")
     for r in results:
-        log += ["", f"[点 {r['point']}] 目標値 = {r['target']:.4f} {spec.unit}  実測値 = {r['value']:.4f} {spec.unit}  "
+        log += ["", f"[Point {r['point']}] target = {r['target']:.4f} {spec.unit}  actual = {r['value']:.4f} {spec.unit}  "
                     f"steps = {r['steps']}  converged = {r['converged']}",
                 f"{'step':>5s} {'energy_eV':>18s} {'fmax_eV/A':>12s}"]
         log += [f"{i:5d} {e:18.8f} {fm:12.5f}" for i, (e, fm) in enumerate(zip(r["hist"]["energy"], r["hist"]["fmax"]))]
