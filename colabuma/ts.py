@@ -257,7 +257,12 @@ def report(job, reactant=None, product=None, dmf_res=None, ts_res=None, vib=None
         de = (e - e[0]) / EV_PER_KCALMOL
         fig, ax = plt.subplots(figsize=(8, 4.2))
         ax.plot(dmf_res["t"], de, marker="o", ms=3, color="#1f77b4", label="DMF path")
-        ax.axvline(dmf_res["t_max"], ls="--", color="gray", label="TS guess (t_max)")
+        i_guess = int(np.argmin(np.abs(dmf_res["t"] - dmf_res["t_max"])))  # t_max は t のグリッドに入っている
+        ax.plot(dmf_res["t"][i_guess], de[i_guess], marker="*", ms=18, color="#ff7f0e", markeredgecolor="black",
+                linestyle="none", zorder=5, label=f"TS guess for Sella (t = {dmf_res['t_max']:.3f})")
+        ax.annotate(f"{de[i_guess]:.1f} kcal/mol", (dmf_res["t"][i_guess], de[i_guess]), xytext=(0, 12),
+                    textcoords="offset points", ha="center", fontsize=9)
+        ax.margins(y=0.15)  # 星の上の数値がはみ出さないように
         if ts_res is not None:
             ax.axhline((ts_res["energy"] - e[0]) / EV_PER_KCALMOL, ls=":", color="#d62728", label="Sella TS")
         ax.set_xlabel("Path parameter t (reactant 0 → product 1)")

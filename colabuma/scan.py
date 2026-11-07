@@ -294,6 +294,49 @@ def gaussian_scan_log(res, job, numbers, converged_results):
     return "\n".join(out) + "\n"
 
 
+def overlay_plot(res, dmf_res=None, points=()):
+    """スキャンの図に、DMF の経路と構造（TS など）を重ねて描く。Workflow 用。
+
+    横軸はどの構造でもスキャンした座標を測った値、縦軸はスキャンの最安定点を基準にした UMA のエネルギー。
+    points は [(凡例の名前, atoms, エネルギー eV, matplotlib の書式 dict), ...]。
+    """
+    import matplotlib.pyplot as plt
+
+    sc, spec = res["scan"], res["scan"].spec
+    e_ref = res["lowest"]["energy"]
+    xs = [r["target"] for r in res["results"]]
+    mid = (min(xs) + max(xs)) / 2
+
+    def x_of(atoms):
+        v = sc.value(atoms)
+        if spec.code == "D":  # 二面角は ±180° に折り返されるので、スキャンの範囲に近い側に寄せる
+            v += 360.0 * round((mid - v) / 360.0)
+        return v
+
+    fig, ax = plt.subplots(figsize=(8, 4.2))
+    ax.plot(xs, [r["dE"] for r in res["results"]], marker="o", ms=4, color="#1f77b4", label="Relaxed scan")
+    if dmf_res is not None:
+        a = res["results"][0]["atoms"].copy()
+        px = []
+        for pos in dmf_res["frames"]:
+            a.positions = pos
+            px.append(x_of(a))
+        py = (np.array(dmf_res["energies"]) - e_ref) / EV_PER_KCALMOL
+        ax.plot(px, py, ls="--", marker=".", ms=4, color="#2ca02c", alpha=0.8, label="DMF path")
+    for label, atoms, energy, style in points:
+        x, y = x_of(atoms), (energy - e_ref) / EV_PER_KCALMOL
+        unit = "Å" if spec.code == "R" else "deg"  # Colab には日本語フォントがないので「度」は使わない
+        ax.plot(x, y, ls="none", zorder=5, label=f"{label} ({x:.2f} {unit}, {y:.1f} kcal/mol)", **style)
+    ax.margins(y=0.12)
+    ax.set_xlabel(f"{spec.xlabel}: {spec.atoms_label}")
+    ax.set_ylabel("Relative energy (kcal/mol)")
+    ax.set_title("Relaxed scan with DMF path and TS")
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    plt.show()
+
+
 def report(res, job, atoms0):
     """プロファイル・表・注意を表示し、(出力ファイルの dict, ログの行) を返す。"""
     import matplotlib.pyplot as plt
