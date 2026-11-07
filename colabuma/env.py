@@ -25,14 +25,16 @@ EXTRAS = {
     },
     "dft": {
         "apt": [],
-        # Colab の CUDA 13 に合わせる。CUDA 12 用の CuPy は libnvrtc.so.12 を見つけられない。
-        # CuPy は Colab に入っている版で、numpy を変えないので再起動がいらない。
+        # gpu4pyscf は CUDA 12 版を使う。CUDA 13 版の 1.9.1 には sm_80 以降の GPU コードしかなく、T4（sm_75）で動かない。
+        # CuPy は 14 系にする。14 系は cuda-pathfinder で、Colab に入っている CUDA 12 のライブラリ
+        # （site-packages/nvidia/cuda_nvrtc/lib など）を見つける。13 系は見つけられず libnvrtc.so.12 のエラーになる。
+        # 14 系は numpy<2.6 なので、Colab の numpy を変えず、再起動もいらない。
         # cuTENSOR がないと gpu4pyscf は cupy.einsum で計算する（pip の依存関係では入らない）。
         # 版はこの CuPy の wheel がビルドされた版（cupy/.data/_wheel.json）に合わせる
-        "pip": [("cupy-cuda13x", "cupy-cuda13x==14.0.1"), ("cutensor-cu13", "cutensor-cu13==2.4.1"),
-                ("gpu4pyscf-cuda13x", "gpu4pyscf-cuda13x==1.9.1"), ("pyscf-dispersion", "pyscf-dispersion")],
+        "pip": [("cupy-cuda12x", "cupy-cuda12x==14.2.0"), ("cutensor-cu12", "cutensor-cu12==2.4.1"),
+                ("gpu4pyscf-cuda12x", "gpu4pyscf-cuda12x==1.9.1"), ("pyscf-dispersion", "pyscf-dispersion")],
         # (残す配布, 同じ cupy/ に入る別の配布)。共有のファイルが壊れるので、両方消してから入れ直す
-        "replace": ("cupy-cuda13x", ["cupy", "cupy-cuda11x", "cupy-cuda12x"]),
+        "replace": ("cupy-cuda12x", ["cupy", "cupy-cuda11x", "cupy-cuda13x"]),
     },
 }
 
@@ -247,7 +249,7 @@ def software_lines():
     import numpy as np
 
     lines = [f"Python {platform.python_version()}", f"ase {ase.__version__}"]
-    for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda13x", "cupy-cuda13x", "cutensor-cu13", "pyscf"):
+    for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "cupy-cuda12x", "cutensor-cu12", "pyscf"):
         if installed(pkg):
             lines.append(f"{pkg} {installed(pkg)}")
     try:
