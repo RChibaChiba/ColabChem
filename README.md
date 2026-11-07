@@ -1,15 +1,15 @@
-# ColabUMA
+# ColabChem
 
-[ホームページ（ColabChem）](https://rchibachiba.github.io/ColabUMA/)
+[ホームページ（ColabChem）](https://rchibachiba.github.io/ColabChem/)
 
 | ノート | 内容 | 開く |
 |---|---|---|
-| ColabUMA Opt | 構造最適化 → DFT一点計算 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Opt.ipynb) |
-| ColabUMA Scan | 緩和スキャン（結合長・角度・二面角） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Scan.ipynb) |
-| ColabUMA TS | 遷移状態探索（DMF → Sella → DFT一点計算） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_TS.ipynb) |
-| ColabUMA Workflow | 最適化 → スキャン → 遷移状態を1つのセッションで続けて実行 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Workflow.ipynb) |
-| ColabDFT SPE | DFT一点計算のみ（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabDFT_SPE.ipynb) |
-| ColabDFT ESP | DFT一点計算と静電ポテンシャル（ESP）の3D表示（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabDFT_ESP.ipynb) |
+| ColabUMA Opt | 構造最適化 → DFT一点計算 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Opt.ipynb) |
+| ColabUMA Scan | 緩和スキャン（結合長・角度・二面角） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Scan.ipynb) |
+| ColabUMA TS | 遷移状態探索（DMF → Sella → DFT一点計算） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_TS.ipynb) |
+| ColabUMA Workflow | 最適化 → スキャン → 遷移状態を1つのセッションで続けて実行 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow.ipynb) |
+| ColabDFT SPE | DFT一点計算のみ（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE.ipynb) |
+| ColabDFT ESP | DFT一点計算と静電ポテンシャル（ESP）の3D表示（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_ESP.ipynb) |
 
 Google Colabで開いて「すべて実行」するだけで、Metaの機械学習ポテンシャル **UMA** を使って分子の構造最適化、緩和スキャン、遷移状態探索ができるノートブックです。xyz か Gaussian の gjf で構造を入れて、電荷とスピン多重度を指定するだけで使えます。
 
