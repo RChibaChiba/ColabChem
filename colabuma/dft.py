@@ -92,8 +92,14 @@ def _make_mol(atoms, charge, multiplicity, basis):
                    charge=int(charge), spin=int(multiplicity) - 1, unit="Angstrom", verbose=0)
 
 
-def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100, keep_density=False, deadline=None):
+def _to_numpy(a):
+    return a.get() if hasattr(a, "get") else a  # GPU の配列を NumPy に
+
+
+def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100, keep_density=False, deadline=None,
+                 keep_orbitals=False):
     """1構造の DFT エネルギー（Hartree）。dict を返す。keep_density なら mol と全電子の密度行列（NumPy）も入れる。
+    keep_orbitals なら mol と分子軌道（mo_coeff, mo_energy, mo_occ。UKS は先頭の軸が α, β）も入れる。
 
     deadline（time.time() の値）を過ぎたら、SCF の反復の区切りで _TimeUp を投げて止める。
     """
@@ -115,10 +121,12 @@ def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100, 
         out = {"energy": e, "converged": bool(mf.converged), "seconds": time.time() - t0, "backend": name,
                "nao": int(mol.nao)}
         if keep_density:
-            dm = mf.make_rdm1()
-            dm = dm.get() if hasattr(dm, "get") else dm  # GPU の配列を NumPy に
+            dm = _to_numpy(mf.make_rdm1())
             dm = dm.sum(axis=0) if dm.ndim == 3 else dm  # UKS は α + β
             out.update(mol=mol, dm=(dm + dm.T) / 2)
+        if keep_orbitals:
+            out.update(mol=mol, mo_coeff=_to_numpy(mf.mo_coeff), mo_energy=_to_numpy(mf.mo_energy),
+                       mo_occ=_to_numpy(mf.mo_occ))
     finally:
         del mf
         _free_gpu()
@@ -234,7 +242,8 @@ def time_budget(limit_min):
     return max(budget, 0.0)
 
 
-def run(points, charge, multiplicity, functional, basis, keep_density=False, time_limit_min=0, fallback=False):
+def run(points, charge, multiplicity, functional, basis, keep_density=False, time_limit_min=0, fallback=False,
+        keep_orbitals=False):
     """points は [(名前, atoms), ...]。各構造の一点計算の結果を返す。
 
     time_limit_min：全構造の合計の時間の上限（分）。0 なら上限なし（Colab ではランタイムの最長時間の目安まで）。
@@ -286,7 +295,7 @@ def run(points, charge, multiplicity, functional, basis, keep_density=False, tim
         progress.show([bar_row("DFT", k / len(points), f"{label} を計算中（{k}/{len(points)} 完了）")], force=True)
         try:
             r = single_point(atoms, charge, multiplicity, functional, basis, keep_density=keep_density,
-                             deadline=deadline)
+                             deadline=deadline, keep_orbitals=keep_orbitals)
         except _TimeUp:
             stop(f"DFT の時間の上限（{budget / 60:.0f} 分）を過ぎたので、{label}の計算を止めました。", time_hint, results)
         except Exception as e:

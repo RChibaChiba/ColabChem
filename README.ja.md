@@ -12,6 +12,7 @@
 | ColabUMA Workflow | 最適化 → スキャン → 遷移状態を1つのセッションで続けて実行 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow.ipynb) |
 | ColabDFT SPE | DFT一点計算のみ（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE.ipynb) |
 | ColabDFT ESP | DFT一点計算と静電ポテンシャル（ESP）の3D表示（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_ESP.ipynb) |
+| ColabDFT MO | DFT一点計算と分子軌道（HOMO・LUMO など）の3D表示（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_MO.ipynb) |
 
 Google Colabで開いて「すべて実行」するだけで、Metaの機械学習ポテンシャル **UMA** を使って分子の構造最適化、緩和スキャン、遷移状態探索ができるノートブックです。xyz か Gaussian の gjf で構造を入れて、電荷とスピン多重度を指定するだけで使えます。
 
@@ -30,6 +31,7 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 - 最適化 → スキャン → 遷移状態を、インストールとモデル読み込み1回で続けて実行（[ColabUMA Workflow](#colabuma-workflow)）
 - 手元の構造をそのまま DFT で一点計算（[ColabDFT SPE](#colabdft-spe)）
 - 手元の構造の静電ポテンシャル（ESP）を等密度面に色付けして表示（[ColabDFT ESP](#colabdft-esp)）
+- 手元の構造の HOMO・LUMO などの分子軌道を等値面で表示（[ColabDFT MO](#colabdft-mo)）
 
 対象外：IRC そのもの（TS ノートの簡易IRCは、虚振動の向きにずらして最適化するだけ）、周期系（結晶・表面）の最適化
 
@@ -207,6 +209,24 @@ xyz に複数の構造が入っている場合は先頭だけを計算します�
 | `<出力名>_dft.csv` | DFT 一点計算のエネルギー |
 | `<出力名>_log.txt` | 入力条件、ソフトのバージョン、計算結果、面の上の ESP の最小・最大 |
 
+## ColabDFT MO
+
+[ColabDFT_MO.ipynb](ColabDFT_MO.ipynb) は、入力した構造のまま DFT の一点計算を行い、HOMO・LUMO などの分子軌道（Kohn–Sham 軌道）を正と負の等値面で 3D 表示するノートです。青が正、赤が負です（軌道の符号には意味がないので、入れ替わることがあります）。HOMO・LUMO のエネルギーとギャップ、HOMO・LUMO の近くの軌道のエネルギーの表も出します。開殻では α と β の軌道をそれぞれ表示します。構造の最適化はせず、UMA もトークンもいりません。電荷、多重度、汎関数、基底関数の項目は [ColabDFT SPE](#colabdft-spe) と同じです。
+
+| 項目 | 既定値 | 説明 |
+|---|---|---|
+| `orbitals` | HOMO, LUMO | 表示する軌道をカンマで区切って書く。`HOMO-1`、`LUMO+2` や、軌道の番号（エネルギーの低い順に 1 から）も使える。一度に 8 個まで |
+| `isovalue` | 0.02 | 等値面の値 ±（Bohr^-3/2）。GaussView の既定値と同じ |
+| `grid_quality` | 標準 | 格子の間隔。粗い 0.5 / 標準 0.35 / 細かい 0.25 Bohr。分子が大きいときは自動で粗くする |
+
+| ファイル | 内容 |
+|---|---|
+| `<出力名>_mo<番号>_<軌道>.cube` | 格子上の軌道の値（Bohr^-3/2）。例：`_mo5_homo.cube`、`_mo4_homom1.cube`（HOMO-1）、`_mo7_lumop1.cube`（LUMO+1）。開殻では `_alpha` / `_beta` が付く |
+| `<出力名>_mo_energies.csv` | 全軌道のエネルギー（Hartree・eV）と占有数 |
+| `<出力名>_spe.xyz` | 計算した構造。コメント行にエネルギーと計算条件 |
+| `<出力名>_dft.csv` | DFT 一点計算のエネルギー |
+| `<出力名>_log.txt` | 入力条件、ソフトのバージョン、計算結果、HOMO・LUMO のエネルギーとギャップ |
+
 ## DFT のメモリと時間
 
 UMA のノート（ColabUMA Opt、TS、Workflow）では、DFT の一点計算がうまくいかなくても、**DFT だけを飛ばして UMA の結果の保存まで進みます**。飛ばしたときは理由を注意として表示し、`log.txt` にも書きます。途中の構造まで終わっていれば、その分のエネルギーは `dft.csv` に入ります。
@@ -221,7 +241,7 @@ DFT を飛ばすのは次のときです。
 
 **メモリの注意**：メモリが足りるか怪しいときは、「構造の準備」のセル（UMA の計算を始める前）と DFT のセルで注意を出します。3中心積分の大きさは上限の見積もりで、実際は小さい積分を省くのでこれより小さくなることが多いです。目安として、T4（GPU 15 GB、CPU 約 12 GB）では、80 原子程度の分子なら def2-SVP は GPU に収まり、def2-TZVP 以上は CPU のメモリも足りなくなる見込みで DFT を飛ばします。
 
-ColabDFT SPE と ESP は DFT そのものが目的なので、飛ばさずに計算します。メモリが怪しいときは注意だけ出します。
+ColabDFT SPE、ESP、MO は DFT そのものが目的なので、飛ばさずに計算します。メモリが怪しいときは注意だけ出します。
 
 Colab のタイムアウトについて：
 
@@ -242,6 +262,7 @@ Colab のタイムアウトについて：
 | `ts.py` | DMF、Sella、TS の確認、簡易IRC |
 | `dft.py` | DFT の一点計算（gpu4pyscf、使えなければ CPU の PySCF）、メモリの見積もり、時間の上限 |
 | `esp.py` | 格子上の電子密度と ESP、cube の書き出し、等密度面の表示 |
+| `mo.py` | 格子上の分子軌道、軌道のエネルギー、正と負の等値面の表示 |
 | `gaussian.py` | Gaussian の log（opt / scan / freq / 経路）と gjf の書き出し |
 | `output.py` | log.txt と ZIP |
 
