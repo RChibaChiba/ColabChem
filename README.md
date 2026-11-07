@@ -232,7 +232,12 @@ xyz に複数の構造が入っている場合は先頭だけを計算します�
 
 ## 引用
 
-論文で使う場合は、以下を引用してください（ColabDFT では UMA を使わないので、下の DFT の文献だけで足ります）。
+論文で使う場合は、ColabChem に加えて、使った手法の文献も引用してください。ColabChem の引用情報は [CITATION.cff](CITATION.cff) にあり、GitHub のリポジトリページ右側の「Cite this repository」から APA や BibTeX の形式でコピーできます。
+
+- R. Chiba, ColabChem, https://github.com/RChibaChiba/ColabChem
+- A. H. Larsen *et al.*, *J. Phys.: Condens. Matter* **29**, 273002 (2017).（ASE。すべてのノートで使います）
+
+UMA を使うノート（ColabUMA）では、次も引用してください（ColabDFT では UMA を使わないので不要です）。
 
 - B. M. Wood *et al.*, "UMA: A Family of Universal Models for Atoms", arXiv:2506.23971 (2025).
 - D. S. Levine *et al.*, "The Open Molecules 2025 (OMol25) Dataset, Evaluations, and Models", arXiv:2505.08762 (2025).
@@ -249,6 +254,8 @@ DFT の一点計算（ColabUMA Opt、TS、Workflow、ColabDFT）を使った場�
 
 - PySCF（Q. Sun *et al.*, *J. Chem. Phys.* **153**, 024109 (2020)）
 - GPU4PySCF（X. Wu *et al.*, arXiv:2404.09452 (2024)）
+
+ColabChem の開発には AI コーディング支援（Claude Code）を使いました。
 
 ## ライセンス
 
