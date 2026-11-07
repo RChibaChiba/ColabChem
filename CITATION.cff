@@ -1,7 +1,8 @@
 cff-version: 1.2.0
 message: >-
   If you use ColabChem, please cite it as below, together with the
-  methods it runs (see references and the README).
+  methods you used (see the Citation section of the README). The
+  references below are the works ColabChem builds on and cites.
 title: ColabChem
 abstract: >-
   Google Colab notebooks for structure optimization, relaxed scans and
@@ -162,3 +163,29 @@ references:
     identifiers:
       - type: other
         value: "arXiv:2404.09452"
+  - type: article
+    title: >-
+      ColabReaction: Accelerating Transition State Searches with Machine
+      Learning Potentials on Google Colaboratory
+    authors:
+      - family-names: Karasawa
+        given-names: Masayuki
+      - family-names: Leow
+        given-names: Chee Siang
+      - family-names: Yajima
+        given-names: Hideaki
+      - family-names: Arai
+        given-names: Shuta
+      - family-names: Nishizaki
+        given-names: Hiromitsu
+      - family-names: Terada
+        given-names: Tohru
+      - family-names: Sato
+        given-names: Hajime
+    journal: Journal of Chemical Information and Modeling
+    volume: 65
+    issue: 21
+    start: 11908
+    end: 11914
+    year: 2025
+    doi: 10.1021/acs.jcim.5c02398
