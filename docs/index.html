@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ColabUMA</title>
-<meta name="description" content="Google Colab で UMA による構造最適化・スキャン・遷移状態探索と DFT の一点計算を、フォーム入力だけで行うノートブック集。">
+<title>ColabChem</title>
+<meta name="description" content="Google Colab で UMA による構造最適化・スキャン・遷移状態探索と、DFT の一点計算・静電ポテンシャル表示を、フォーム入力だけで行うノートブック集。">
 <style>
 :root {
   --bg: #fafaf7;
@@ -101,13 +101,13 @@ footer p { margin: 0 0 6px; }
 <body>
 <div class="wrap">
   <header>
-    <h1>ColabUMA</h1>
-    <p>Google Colab で開いて「すべて実行」を押し、構造ファイルを選ぶだけ。Meta の機械学習ポテンシャル UMA による構造最適化・スキャン・遷移状態探索と、DFT の一点計算ができます。</p>
+    <h1>ColabChem</h1>
+    <p>Google Colab で開いて「すべて実行」を押し、構造ファイルを選ぶだけ。Meta の機械学習ポテンシャル UMA による構造最適化・スキャン・遷移状態探索と、DFT の一点計算・静電ポテンシャルの表示ができます。</p>
   </header>
 
   <main>
     <section aria-labelledby="notebooks">
-      <h2 id="notebooks">ノートブック</h2>
+      <h2 id="notebooks">ColabUMA：UMA を使うノート</h2>
       <div class="cards">
         <article class="card">
           <h3>ColabUMA Opt</h3>
@@ -148,16 +148,32 @@ footer p { margin: 0 0 6px; }
           </dl>
           <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabUMA_Workflow.ipynb" aria-label="ColabUMA Workflow を Colab で開く">Colab で開く</a>
         </article>
+      </div>
+    </section>
 
+    <section aria-labelledby="notebooks-dft">
+      <h2 id="notebooks-dft">ColabDFT：UMA を使わないノート</h2>
+      <div class="cards">
         <article class="card">
           <div><span class="tag">トークン不要</span></div>
-          <h3>ColabSPE</h3>
-          <p>入力した構造のまま、GPU4PySCF で DFT の一点計算だけを行います。UMA は使いません。</p>
+          <h3>ColabDFT SPE</h3>
+          <p>入力した構造のまま、GPU4PySCF で DFT の一点計算だけを行います。</p>
           <dl>
             <dt>入力</dt><dd>xyz または gjf を1つ</dd>
             <dt>主な出力</dt><dd>エネルギーを書き込んだ xyz、DFT のエネルギー（CSV）</dd>
           </dl>
-          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabSPE.ipynb" aria-label="ColabSPE を Colab で開く">Colab で開く</a>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabDFT_SPE.ipynb" aria-label="ColabDFT SPE を Colab で開く">Colab で開く</a>
+        </article>
+
+        <article class="card">
+          <div><span class="tag">トークン不要</span></div>
+          <h3>ColabDFT ESP</h3>
+          <p>入力した構造のまま DFT の一点計算を行い、静電ポテンシャル（ESP）を等密度面に色付けして 3D 表示します。</p>
+          <dl>
+            <dt>入力</dt><dd>xyz または gjf を1つ</dd>
+            <dt>主な出力</dt><dd>ESP の 3D 表示、ESP と電子密度の cube ファイル、面の上の最小・最大</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabUMA/blob/main/ColabDFT_ESP.ipynb" aria-label="ColabDFT ESP を Colab で開く">Colab で開く</a>
         </article>
       </div>
     </section>
@@ -172,7 +188,8 @@ footer p { margin: 0 0 6px; }
             <tr><td>結合や二面角を動かしてエネルギー変化を見たい</td><td>Scan</td></tr>
             <tr><td>反応物と生成物、または初期構造から TS を探したい</td><td>TS</td></tr>
             <tr><td>1つの入力構造から TS まで続けて計算したい</td><td>Workflow</td></tr>
-            <tr><td>手元の構造のエネルギーを DFT で計算したい</td><td>ColabSPE</td></tr>
+            <tr><td>手元の構造のエネルギーを DFT で計算したい</td><td>ColabDFT SPE</td></tr>
+            <tr><td>手元の構造の静電ポテンシャルを見たい</td><td>ColabDFT ESP</td></tr>
           </tbody>
         </table>
       </div>
@@ -189,7 +206,7 @@ footer p { margin: 0 0 6px; }
         <li>結果を確認し、ZIP をダウンロードする</li>
       </ol>
       <div class="note">
-        <strong>初回のみ（ColabSPE 以外）：</strong>
+        <strong>初回のみ（ColabDFT 以外）：</strong>
         <a href="https://huggingface.co/facebook/UMA">facebook/UMA</a> でアクセスを申請して FAIR Chemistry License v1 に同意し、承認後に Read 権限の<a href="https://huggingface.co/settings/tokens">トークン</a>を作ります。Colab の左サイドバーの🔑（シークレット）に名前 <code>HF_TOKEN</code> で登録し、ノートブックからのアクセスをオンにしてください。
       </div>
     </section>
@@ -200,7 +217,7 @@ footer p { margin: 0 0 6px; }
         <li>UMA は機械学習ポテンシャルであり、DFT の代わりにはなりません。最終的なエネルギー比較は DFT で確認してください。</li>
         <li>最適化は鞍点に収束することがあります。重要な構造は振動計算で確認してください。</li>
         <li>TS ノートで見つかるのは UMA のポテンシャル面の TS です。最終的には DFT で TS 最適化と IRC を行ってください。</li>
-        <li>扱える元素は、UMA を使うノートでは H〜Bi、ColabSPE では H〜Rn です。周期系には対応していません。</li>
+        <li>扱える元素は、UMA を使うノートでは H〜Bi、ColabDFT では H〜Rn です。周期系には対応していません。</li>
       </ul>
     </section>
   </main>

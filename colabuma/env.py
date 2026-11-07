@@ -16,7 +16,7 @@ FAIRCHEM_VERSION = "2.25.0"
 
 # 追加の機能ごとに必要なもの。apt はシステムのライブラリ、pip は (配布名, 指定) の組
 EXTRAS = {
-    # fairchem が一緒に入れるもの。UMA を使わない ColabSPE では別に入れる
+    # fairchem が一緒に入れるもの。UMA を使わない ColabDFT では別に入れる
     "structure": {"apt": [], "pip": [("ase", "ase"), ("py3Dmol", "py3Dmol")]},
     # DMF（pydmf）は IPOPT を使う。cyipopt は pip のバイナリがないので、apt の Ipopt からビルドする
     "ts": {
