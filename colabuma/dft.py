@@ -24,7 +24,7 @@ MAX_Z = 86  # def2 基底関数があるのは H〜Rn
 
 @dataclass
 class Job:
-    """UMA を使わない一点計算（ColabSPE）のフォームの値。"""
+    """UMA を使わない計算（ColabDFT SPE / ESP）のフォームの値。"""
     out_prefix: str
     charge: int
     multiplicity: int
@@ -58,8 +58,8 @@ def _backend():
         return "pyscf (CPU)", cdft
 
 
-def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100):
-    """1構造の DFT エネルギー（Hartree）。dict を返す。"""
+def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100, keep_density=False):
+    """1構造の DFT エネルギー（Hartree）。dict を返す。keep_density なら mol と全電子の密度行列（NumPy）も入れる。"""
     import pyscf
 
     name, mod = _backend()
@@ -75,6 +75,11 @@ def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100):
     e = float(mf.kernel())
     out = {"energy": e, "converged": bool(mf.converged), "seconds": time.time() - t0, "backend": name,
            "nao": int(mol.nao)}
+    if keep_density:
+        dm = mf.make_rdm1()
+        dm = dm.get() if hasattr(dm, "get") else dm  # GPU の配列を NumPy に
+        dm = dm.sum(axis=0) if dm.ndim == 3 else dm  # UKS は α + β
+        out.update(mol=mol, dm=(dm + dm.T) / 2)
     if name.startswith("gpu"):
         import cupy
 
@@ -83,7 +88,7 @@ def single_point(atoms, charge, multiplicity, functional, basis, max_cycle=100):
     return out
 
 
-def run(points, charge, multiplicity, functional, basis):
+def run(points, charge, multiplicity, functional, basis, keep_density=False):
     """points は [(名前, atoms), ...]。各構造の一点計算の結果を返す。"""
     functional, basis = parse_method(functional, basis)
     if max(int(a.numbers.max()) for _, a in points) > MAX_Z:
@@ -104,7 +109,7 @@ def run(points, charge, multiplicity, functional, basis):
     for k, (label, atoms) in enumerate(points):
         progress.show([bar_row("DFT", k / len(points), f"{label} を計算中（{k}/{len(points)} 完了）")], force=True)
         try:
-            r = single_point(atoms, charge, multiplicity, functional, basis)
+            r = single_point(atoms, charge, multiplicity, functional, basis, keep_density=keep_density)
         except MemoryError:
             raise ColabUMAError("DFT の計算でメモリが足りません。", "基底関数を def2-SVP にしてください。") from None
         except Exception as e:
