@@ -3,7 +3,9 @@
 軌道の値の単位は Bohr^(-3/2)。軌道の符号（位相）には意味がなく、計算ごとに全体が反転することがある。
 開殻（UKS）では α と β の軌道を別々に扱う。
 """
+import os
 import re
+import uuid
 
 import numpy as np
 
@@ -15,7 +17,11 @@ EV_PER_HARTREE = 27.211386245988
 MAX_POINTS = 500_000  # 格子の点の数の上限。超えるなら格子を粗くする
 DISPLAY_POINTS = 80_000  # 3D表示に渡す1軌道あたりの点の数。多いとノートの出力が重くなる
 MAX_ORBITALS = 8  # 一度に表示する軌道の数の上限（開殻では α と β で倍になる）
-TABLE_RANGE = 5  # エネルギーの表に出す、HOMO より下と LUMO より上の軌道の数
+TABLE_RANGE = 5
+DIAGRAM_RANGE = 8  # 準位図に出す、HOMO より下と LUMO より上の軌道の数
+CORE_GAP_EV = 40.0  # HOMO よりこれだけ低い軌道（内殻）は準位図に出さない。フォームで指定すればボタンから表示できる
+AO_CACHE_BYTES = 400e6
+DISPLAY_CUTOFF = 1e-3  # 3D表示に渡す値で、これより小さいものは 0 にする（等値面の選択肢の最小 0.005 より十分小さい）  # 表示用の格子の AO の値を覚えておく上限  # エネルギーの表に出す、HOMO より下と LUMO より上の軌道の数
 POSITIVE_COLOR = "#1f4fd8"  # 正の等値面（青）
 NEGATIVE_COLOR = "#d62728"  # 負の等値面（赤）
 
@@ -148,27 +154,109 @@ def _touches_box(field, grid, isovalue):
     return any(f.max() > isovalue for f in faces)
 
 
-def show_orbital(result, orbital):
-    """1つの軌道の正（青）と負（赤）の等値面を表示する。"""
+def _viewer_url():
+    # py3Dmol が使う 3Dmol.js の URL（py3Dmol の版と合わせる）
     import py3Dmol
 
-    from .structure import xyz_block
-    from .ui import heading
+    m = re.search(r"https://[^'\"]+3Dmol-min\.js", py3Dmol.view().startjs)
+    return m.group(0) if m else "https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"
 
-    small_field, small = downsample(orbital["values"], result["grid"], DISPLAY_POINTS)
+
+class _DisplayGrid:
+    """3D表示用の間引いた格子と、クリックした軌道をその格子で計算する関数。"""
+
+    def __init__(self, result):
+        self.result = result
+        self.mol = result["point"]["mol"]
+        _, self.grid = downsample(np.zeros(result["grid"].size), result["grid"], DISPLAY_POINTS)
+        self._ao = None
+
+    def _ao_values(self, coords):
+        return self.mol.eval_gto("GTOval_cart" if self.mol.cart else "GTOval_sph", coords)
+
+    def values(self, coeff):
+        coords = self.grid.coords()
+        if len(coords) * self.mol.nao * 8 <= AO_CACHE_BYTES:  # 小さければ AO の値を覚えておいて、2回目から速くする
+            if self._ao is None:
+                self._ao = self._ao_values(coords)
+            return self._ao @ coeff
+        return np.concatenate([self._ao_values(coords[p0:p1]) @ coeff for p0, p1 in _batches(len(coords), 5000)])
+
+    def cube(self, values, title):
+        # 表示に使わない小さい値は 0 にして短く書き、ページを軽くする
+        r = self.result
+        values = np.where(np.abs(values) < DISPLAY_CUTOFF, 0.0, values)
+        return cube_text(values, self.grid, r["numbers"], r["atom_coords"], title, " {:.3g}")
+
+
+_explorer = None  # クリックで呼ばれる関数が使う、最後に表示した軌道の格子
+
+
+def _cube_for_click(spin, index):
+    from IPython.display import JSON
+
+    if _explorer is None:
+        return JSON({"error": "軌道の計算結果がありません。「軌道の計算」のセルから実行し直してください。"})
+    sets = _spin_sets(_explorer.result["point"])
+    spin, index = int(spin), int(index)
+    if not (0 <= spin < len(sets) and 0 <= index < len(sets[spin][2])):
+        return JSON({"error": "その軌道はありません。"})
+    try:
+        values = _explorer.values(sets[spin][1][:, index])
+    except MemoryError:
+        return JSON({"error": "メモリが足りません。"})
+    return JSON({"cube": _explorer.cube(values, f"orbital {index + 1}")})
+
+
+def explorer(result):
+    """エネルギー準位図と 3D 表示を並べて表示する。準位をクリックすると、その軌道を表示する。
+
+    フォームで指定した軌道はページに埋め込むので、ランタイムがなくても表示できる。ほかの軌道は、クリックしたときに
+    Colab のランタイムで計算する（google.colab.kernel.invokeFunction）。
+    """
+    import json
+
+    from IPython.display import HTML, display
+
+    from .structure import xyz_block
+
+    global _explorer
+    _explorer = _DisplayGrid(result)
+    try:
+        from google.colab import output
+
+        output.register_callback("colabchem.mo_cube", _cube_for_click)
+    except ImportError:
+        pass
+
+    point = result["point"]
+    spins = []
+    for spin, _, e, n in _spin_sets(point):
+        occupied = np.nonzero(n > 1e-6)[0]
+        homo = int(occupied.max()) if occupied.size else -1
+        lo, hi = max(0, homo - DIAGRAM_RANGE), min(len(e) - 1, homo + 1 + DIAGRAM_RANGE)
+        while lo < homo and e[homo] - e[lo] > CORE_GAP_EV / EV_PER_HARTREE:  # 内殻の軌道は準位図に出さない
+            lo += 1
+        spins.append({"name": spin, "orbitals": [
+            {"i": i, "label": _label(i, homo), "e": float(e[i]) * EV_PER_HARTREE, "occ": float(n[i])}
+            for i in range(lo, hi + 1)]})
+    names = [s["name"] for s in spins]
+    cubes, chips = {}, []
+    for o in result["orbitals"]:
+        small, _ = downsample(o["values"], result["grid"], DISPLAY_POINTS)
+        key = f"{names.index(o['spin'])}:{o['index']}"
+        cubes[key] = _explorer.cube(small, _name(o))
+        chips.append({"key": key, "name": _name(o), "label": o["label"], "e": o["energy"] * EV_PER_HARTREE, "occ": o["occ"],
+                      "i": o["index"]})
     atoms = result["atoms"]
-    cube = cube_text(small_field, small, result["numbers"], result["atom_coords"], _name(orbital), " {:.2E}")
-    heading(f"{_name(orbital)}　{orbital['index'] + 1} 番、{orbital['energy'] * EV_PER_HARTREE:.3f} eV、"
-            f"占有数 {orbital['occ']:g}")
-    view = py3Dmol.view(width=640, height=420)
-    view.addModel(xyz_block(atoms.get_chemical_symbols(), atoms.positions, ""), "xyz")
-    view.setStyle({"stick": {"radius": 0.12}, "sphere": {"scale": 0.2}})
-    iso = result["isovalue"]
-    view.addVolumetricData(cube, "cube", {"isoval": iso, "color": POSITIVE_COLOR, "opacity": 0.85, "smoothness": 3})
-    view.addVolumetricData(cube, "cube", {"isoval": -iso, "color": NEGATIVE_COLOR, "opacity": 0.85, "smoothness": 3})
-    view.setBackgroundColor("white")
-    view.zoomTo()
-    view.show()
+    data = {"uid": f"mo_{uuid.uuid4().hex[:12]}", "spins": spins, "cubes": cubes, "chips": chips,
+            "iso": result["isovalue"], "pos": POSITIVE_COLOR, "neg": NEGATIVE_COLOR,
+            "xyz": xyz_block(atoms.get_chemical_symbols(), atoms.positions, "")}
+    with open(os.path.join(os.path.dirname(__file__), "mo_explorer.html"), encoding="utf-8") as f:
+        page = f.read()
+    page = page.replace("__URL__", _viewer_url()).replace("__UID__", data["uid"]).replace(
+        "__DATA__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
+    display(HTML(page))
 
 
 def energy_table(point):
@@ -210,8 +298,7 @@ def report(result):
     print("\n".join(lines))
     print("青が正、赤が負の等値面です。軌道の符号（位相）には意味がないので、青と赤が入れ替わることがあります。")
 
-    for o in result["orbitals"]:
-        show_orbital(result, o)
+    explorer(result)
 
     table = energy_table(point)
     near = table[table["軌道"].str.match(r"^(HOMO(-[0-9]+)?|LUMO(\+[0-9]+)?)$")

@@ -213,7 +213,7 @@ If an xyz holds several structures, only the first is computed. Supported elemen
 
 ## ColabDFT MO
 
-[ColabDFT_MO.ipynb](ColabDFT_MO.ipynb) runs a DFT single point on the input structure as it is, and shows molecular orbitals (Kohn–Sham orbitals) such as HOMO and LUMO as positive and negative isosurfaces in 3D. Blue is positive, red is negative (the overall sign of an orbital has no meaning, so the colors can swap). It also shows the HOMO and LUMO energies, the gap, and a table of the orbital energies near HOMO and LUMO. For open shells, α and β orbitals are shown separately. It does not optimize the structure, and needs neither UMA nor a token. The charge, multiplicity, functional and basis set items are the same as in [ColabDFT SPE](#colabdft-spe).
+[ColabDFT_MO.ipynb](ColabDFT_MO.ipynb) runs a DFT single point on the input structure as it is, and shows molecular orbitals (Kohn–Sham orbitals) such as HOMO and LUMO as positive and negative isosurfaces in 3D. Blue is positive, red is negative (the overall sign of an orbital has no meaning, so the colors can swap). An energy level diagram (occupations shown as ↑↓) sits next to the 3D view; click a level to show that orbital. Orbitals not given in the form are computed on click by the Colab runtime (only while it is connected). It also shows the HOMO and LUMO energies, the gap, and a table of the orbital energies near HOMO and LUMO. Only the orbitals given in the form are written as cube files to the ZIP. For open shells, α and β orbitals are shown separately. It does not optimize the structure, and needs neither UMA nor a token. The charge, multiplicity, functional and basis set items are the same as in [ColabDFT SPE](#colabdft-spe).
 
 | Item | Default | Description |
 |---|---|---|
@@ -264,7 +264,7 @@ Notebook cells only take the form values and call functions. The calculations li
 | `ts.py` | DMF, Sella, TS checks, simple IRC check |
 | `dft.py` | DFT single points (gpu4pyscf, or CPU PySCF if the GPU is unavailable), memory estimate, time limit |
 | `esp.py` | Electron density and ESP on a grid, cube output, isosurface view |
-| `mo.py` | Molecular orbitals on a grid, orbital energies, positive and negative isosurface view |
+| `mo.py`, `mo_explorer.html` | Molecular orbitals on a grid, orbital energies, clickable level diagram with positive and negative isosurfaces |
 | `gaussian.py` | Writing Gaussian logs (opt / scan / freq / path) and gjf files |
 | `output.py` | log.txt and the ZIP |
 
