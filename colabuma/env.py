@@ -25,13 +25,14 @@ EXTRAS = {
     },
     "dft": {
         "apt": [],
-        # cuTENSOR がないと gpu4pyscf は cupy.einsum で計算する（pip の依存関係では cuTENSOR は入らない）。
-        # CuPy は Colab の numpy を変えない版にする。13.4.1 は numpy<2.3 で、Colab の numpy 2.4 を下げてしまい、
-        # 新しいセッションのたびに再起動が必要になる
-        "pip": [("cupy-cuda12x", "cupy-cuda12x==13.6.0"), ("cutensor-cu12", "cutensor-cu12==2.2.0"),
-                ("gpu4pyscf-cuda12x", "gpu4pyscf-cuda12x==1.9.1"), ("pyscf-dispersion", "pyscf-dispersion")],
+        # Colab の CUDA 13 に合わせる。CUDA 12 用の CuPy は libnvrtc.so.12 を見つけられない。
+        # CuPy は Colab に入っている版で、numpy を変えないので再起動がいらない。
+        # cuTENSOR がないと gpu4pyscf は cupy.einsum で計算する（pip の依存関係では入らない）。
+        # 版はこの CuPy の wheel がビルドされた版（cupy/.data/_wheel.json）に合わせる
+        "pip": [("cupy-cuda13x", "cupy-cuda13x==14.0.1"), ("cutensor-cu13", "cutensor-cu13==2.4.1"),
+                ("gpu4pyscf-cuda13x", "gpu4pyscf-cuda13x==1.9.1"), ("pyscf-dispersion", "pyscf-dispersion")],
         # (残す配布, 同じ cupy/ に入る別の配布)。共有のファイルが壊れるので、両方消してから入れ直す
-        "replace": ("cupy-cuda12x", ["cupy", "cupy-cuda11x", "cupy-cuda13x"]),
+        "replace": ("cupy-cuda13x", ["cupy", "cupy-cuda11x", "cupy-cuda12x"]),
     },
 }
 
@@ -246,7 +247,7 @@ def software_lines():
     import numpy as np
 
     lines = [f"Python {platform.python_version()}", f"ase {ase.__version__}"]
-    for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda12x", "cupy-cuda12x", "cutensor-cu12", "pyscf"):
+    for pkg in ("fairchem-core", "pydmf", "sella", "cyipopt", "gpu4pyscf-cuda13x", "cupy-cuda13x", "cutensor-cu13", "pyscf"):
         if installed(pkg):
             lines.append(f"{pkg} {installed(pkg)}")
     try:

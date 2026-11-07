@@ -50,7 +50,7 @@ def _backend():
         import cupy  # noqa: F401
         from gpu4pyscf import dft as gdft
 
-        cupy.zeros(1)  # GPU が実際に使えるか
+        (cupy.ones(1) * 2.0).sum()  # GPU が実際に使えるか。カーネルのコンパイル（NVRTC）まで試す
         return "gpu4pyscf", gdft
     except Exception:
         from pyscf import dft as cdft

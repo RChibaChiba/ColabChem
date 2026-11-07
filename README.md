@@ -266,9 +266,9 @@ DFT の一点計算（ColabUMA Opt、TS、Workflow、ColabDFT）を使った場�
 | [cyipopt](https://github.com/mechmotum/cyipopt) | TS、Workflow | EPL-2.0 |
 | [Ipopt](https://github.com/coin-or/Ipopt)（apt の `coinor-libipopt-dev`、3.11 系） | TS、Workflow | CPL-1.0（3.13 以降は EPL-2.0） |
 | MUMPS（Ipopt が使う線形ソルバー。apt で一緒に入る） | TS、Workflow | CeCILL-C |
-| [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)（`gpu4pyscf-cuda12x`、`gpu4pyscf-libxc-cuda12x`） | Opt、TS、Workflow（DFT）、ColabDFT | Apache-2.0 |
-| [CuPy](https://cupy.dev/)（`cupy-cuda12x`） | Opt、TS、Workflow（DFT）、ColabDFT | MIT |
-| [cuTENSOR](https://developer.nvidia.com/cutensor)（`cutensor-cu12`） | Opt、TS、Workflow（DFT）、ColabDFT | NVIDIA のプロプライエタリライセンス |
+| [GPU4PySCF](https://github.com/pyscf/gpu4pyscf)（`gpu4pyscf-cuda13x`、`gpu4pyscf-libxc-cuda13x`） | Opt、TS、Workflow（DFT）、ColabDFT | Apache-2.0 |
+| [CuPy](https://cupy.dev/)（`cupy-cuda13x`） | Opt、TS、Workflow（DFT）、ColabDFT | MIT |
+| [cuTENSOR](https://developer.nvidia.com/cutensor)（`cutensor-cu13`） | Opt、TS、Workflow（DFT）、ColabDFT | NVIDIA のプロプライエタリライセンス |
 | [PySCF](https://github.com/pyscf/pyscf) | Opt、TS、Workflow（DFT）、ColabDFT | Apache-2.0 |
 | [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt、TS、Workflow（DFT）、ColabDFT | Apache-2.0 |
 
