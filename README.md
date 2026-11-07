@@ -342,7 +342,3 @@ This repository does not include the software below. When a notebook runs, it is
 | [JSME](https://jsme-editor.github.io/) (structure editor; not installed, the browser loads it from jsDelivr when shown) | ColabDFT ESP and MO (only with the draw input) | BSD-3-Clause |
 
 These licenses are as stated by each package's distribution (PyPI and Ubuntu packages) as of November 2026. Libraries they depend on (PyTorch, NumPy, SciPy, etc.) are installed as well. Check each distribution for the exact terms.
-
-## Before publishing
-
-Before committing an updated notebook, choose **Edit → Clear all outputs**, save, and make sure no output cells or tokens remain.
