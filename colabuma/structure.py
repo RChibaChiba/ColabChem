@@ -1,4 +1,4 @@
-"""ファイルのアップロード、xyz・gjf の読み込み、元素と電荷・多重度の確認、3D表示。"""
+"""ファイルのアップロード、構造を描く入力（JSME）、xyz・gjf の読み込み、元素と電荷・多重度の確認、3D表示。"""
 import os
 import re
 import tempfile
@@ -8,6 +8,10 @@ import numpy as np
 from .ui import ColabUMAError, warn
 
 GJF_EXTENSIONS = (".gjf", ".com", ".gjc")
+INPUT_MODES = ("ファイル", "描く")
+DRAWN_NAME = "drawn.mol"  # 描いた構造は、この名前の molfile として読み込みに渡す
+JSME_URL = "https://cdn.jsdelivr.net/npm/jsme-editor@2024.4.29/jsme.nocache.js"
+N_CONFORMERS = 10  # 描いた構造から作る配座の数。MMFF のエネルギーが一番低いものを使う
 MAX_Z = 83  # UMAのomolタスク（OMol25）が扱える元素は H〜Bi
 
 _uploads = {}  # 前回アップロードしたファイル（Cancel upload で使い回す）。キーごとに覚える
@@ -32,6 +36,72 @@ def upload(key="input", what="xyz または gjf（.gjf / .com）ファイル"):
     else:
         raise ColabUMAError("ファイルがアップロードされませんでした。", f"もう一度すべて実行して、{what}を選んでください。")
     return _uploads[key]
+
+
+def get_input(mode):
+    """フォームの「入力」に合わせて、ファイルを選ばせるか構造を描かせる。(名前, 中身) を返す。"""
+    if mode == "ファイル":
+        return upload()
+    if mode == "描く":
+        return draw()
+    raise ColabUMAError(f"入力「{mode}」には対応していません。", f"{', '.join(INPUT_MODES)} から選んでください。")
+
+
+def draw(key="draw"):
+    """JSME で構造を描かせ、「この構造で計算」が押されるまで待つ。(名前, molfile) を返す。前回の構造を最初に表示する。"""
+    import json
+
+    from IPython.display import HTML, display
+
+    try:
+        from google.colab import output
+    except ImportError:
+        raise ColabUMAError("構造を描く入力は Google Colab でだけ使えます。", "入力を「ファイル」にしてください。") from None
+    previous = _uploads.get(key)
+    with open(os.path.join(os.path.dirname(__file__), "draw.html"), encoding="utf-8") as f:
+        page = f.read()
+    page = page.replace("__JSME_URL__", JSME_URL).replace(
+        "__PREVIOUS__", json.dumps(previous[1].decode() if previous else "").replace("</", "<\\/"))
+    print("構造を描いて「この構造で計算」を押してください。水素は描かなくても自動で付けます。")
+    display(HTML(page))
+    molfile = output.eval_js("new Promise((resolve) => { const wait = () => window.colabchemDrawn"
+                             " ? window.colabchemDrawn.then(resolve) : setTimeout(wait, 100); wait(); })")
+    if not molfile or not molfile.strip():
+        raise ColabUMAError("構造が描かれていません。", "もう一度すべて実行して、構造を描いてください。")
+    _uploads[key] = (DRAWN_NAME, molfile.encode())
+    return _uploads[key]
+
+
+def molfile_to_atoms(molfile):
+    """描いた構造（2D の molfile）に水素を付けて 3D にする。(atoms, SMILES, 形式電荷の合計) を返す。
+
+    RDKit の ETKDG で配座をいくつか作り、MMFF94（使えなければ UFF）で最適化して、エネルギーが一番低いものを使う。
+    """
+    from ase import Atoms
+    from rdkit import Chem, RDLogger
+    from rdkit.Chem import AllChem
+
+    RDLogger.DisableLog("rdApp.*")
+    mol = Chem.MolFromMolBlock(molfile, removeHs=False)
+    if mol is None or mol.GetNumAtoms() == 0:
+        raise ColabUMAError("描いた構造を読み取れませんでした。", "原子の価数（結合の数）がおかしくないか確認して、描き直してください。")
+    smiles = Chem.MolToSmiles(Chem.RemoveHs(mol))
+    mol = Chem.AddHs(mol)
+    params = AllChem.ETKDGv3()
+    params.randomSeed = 20240429
+    ids = list(AllChem.EmbedMultipleConfs(mol, N_CONFORMERS, params))
+    if not ids:
+        params.useRandomCoords = True
+        ids = list(AllChem.EmbedMultipleConfs(mol, N_CONFORMERS, params))
+    if not ids:
+        raise ColabUMAError("描いた構造から 3D の座標を作れませんでした。", "ひずみの大きい構造かもしれません。xyz か gjf で入力してください。")
+    if AllChem.MMFFHasAllMoleculeParams(mol):
+        energies = [e for _, e in AllChem.MMFFOptimizeMoleculeConfs(mol, maxIters=2000)]
+    else:
+        energies = [e for _, e in AllChem.UFFOptimizeMoleculeConfs(mol, maxIters=2000)]
+    best = ids[int(np.argmin(energies))]
+    atoms = Atoms([a.GetSymbol() for a in mol.GetAtoms()], positions=mol.GetConformer(best).GetPositions())
+    return atoms, smiles, Chem.GetFormalCharge(mol)
 
 
 def quick_atom_count(name, data):
@@ -146,6 +216,11 @@ def read_frames(fname, data, charge, multiplicity, uma=True):
     path = os.path.join(tempfile.mkdtemp(), os.path.basename(fname))
     with open(path, "wb") as f:
         f.write(data)
+    if fname == DRAWN_NAME:
+        atoms, smiles, formal = molfile_to_atoms(data.decode())
+        if formal != charge:
+            warn(f"描いた構造の形式電荷の合計（{formal:+d}）とフォームの電荷（{charge:+d}）が違います。計算にはフォームの値を使います。")
+        return [prepare(atoms, charge, multiplicity, uma)], f"描いた構造: {smiles}（RDKit で 3D 化）"
     if os.path.splitext(fname)[1].lower() in GJF_EXTENSIONS:
         atoms, gjf_cm = read_gjf(path, fname)
         if gjf_cm != (charge, multiplicity):

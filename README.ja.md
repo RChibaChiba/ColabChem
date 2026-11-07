@@ -197,6 +197,7 @@ xyz に複数の構造が入っている場合は先頭だけを計算します�
 
 | 項目 | 既定値 | 説明 |
 |---|---|---|
+| `input_mode` | ファイル | 「ファイル」は xyz・gjf を選ぶ。「描く」は構造エディタ（JSME）で描き、水素を付けて RDKit で 3D にする（ETKDG の 10 配座を MMFF94 で最適化し、一番低いもの）。構造の最適化はしない |
 | `isosurface` | 0.002 | 色を付ける等密度面の値（e/Bohr³） |
 | `grid_quality` | 標準 | 格子の間隔。粗い 0.5 / 標準 0.35 / 細かい 0.25 Bohr。分子が大きいときは自動で粗くする |
 | `esp_color_range` | 0 | 色の範囲 ±（kcal/mol）。0 なら自動。分子どうしを比べるときは同じ値にする |
@@ -215,6 +216,7 @@ xyz に複数の構造が入っている場合は先頭だけを計算します�
 
 | 項目 | 既定値 | 説明 |
 |---|---|---|
+| `input_mode` | ファイル | 「ファイル」は xyz・gjf を選ぶ。「描く」は構造エディタ（JSME）で描き、水素を付けて RDKit で 3D にする（ETKDG の 10 配座を MMFF94 で最適化し、一番低いもの）。構造の最適化はしない |
 | `orbitals` | HOMO, LUMO | 表示する軌道をカンマで区切って書く。`HOMO-1`、`LUMO+2` や、軌道の番号（エネルギーの低い順に 1 から）も使える。一度に 8 個まで |
 | `isovalue` | 0.02 | 等値面の値 ±（Bohr^-3/2）。GaussView の既定値と同じ |
 | `grid_quality` | 標準 | 格子の間隔。粗い 0.5 / 標準 0.35 / 細かい 0.25 Bohr。分子が大きいときは自動で粗くする |
@@ -256,7 +258,7 @@ Colab のタイムアウトについて：
 | モジュール | 内容 |
 |---|---|
 | `env.py` | GPU とトークンの確認、インストール、Hugging Face の認証、モデル読み込み（同じセッションでは1回だけ） |
-| `structure.py` | アップロード、xyz・gjf の読み込み、電荷・多重度の確認、3D表示 |
+| `structure.py`、`draw.html` | アップロード、構造を描く入力（JSME → RDKit で 3D 化）、xyz・gjf の読み込み、電荷・多重度の確認、3D表示 |
 | `opt.py` | 最適化とプログレスバー、振動解析（数値ヘシアン）、Opt ノートの結果表示 |
 | `scan.py` | 緩和スキャン |
 | `ts.py` | DMF、Sella、TS の確認、簡易IRC |
@@ -328,6 +330,8 @@ ColabChem の開発には AI コーディング支援（Claude Code）を使い�
 | [cuTENSOR](https://developer.nvidia.com/cutensor)（`cutensor-cu12`） | Opt、TS、Workflow（DFT）、ColabDFT | NVIDIA のプロプライエタリライセンス |
 | [PySCF](https://github.com/pyscf/pyscf) | Opt、TS、Workflow（DFT）、ColabDFT | Apache-2.0 |
 | [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt、TS、Workflow（DFT）、ColabDFT | Apache-2.0 |
+| [RDKit](https://github.com/rdkit/rdkit) | ColabDFT ESP・MO（入力を「描く」にしたときだけ） | BSD-3-Clause |
+| [JSME](https://jsme-editor.github.io/)（構造エディタ。インストールせず、表示するときにブラウザが jsDelivr から読み込む） | ColabDFT ESP・MO（入力を「描く」にしたときだけ） | BSD-3-Clause |
 
 ここに書いたライセンスは、2026年11月時点で各パッケージの配布元（PyPI と Ubuntu のパッケージ）に書かれているものです。ほかにも、これらが依存するライブラリ（PyTorch、NumPy、SciPy など）が一緒にインストールされます。正確な条件は、それぞれの配布元で確認してください。
 

@@ -199,6 +199,7 @@ If an xyz holds several structures, only the first is computed. Supported elemen
 
 | Item | Default | Description |
 |---|---|---|
+| `input_mode` | ファイル (file) | ファイル (file): choose an xyz or gjf. 描く (draw): draw the structure in an editor (JSME); hydrogens are added and RDKit makes the 3D structure (10 ETKDG conformers optimized with MMFF94, lowest one kept). The structure is not optimized further |
 | `isosurface` | 0.002 | Density of the isosurface that is colored (e/Bohr³) |
 | `grid_quality` | 標準 (standard) | Grid spacing. 粗い (coarse) 0.5 / 標準 (standard) 0.35 / 細かい (fine) 0.25 Bohr. Made coarser automatically for large molecules |
 | `esp_color_range` | 0 | Color range ± (kcal/mol). 0 means automatic. Use the same value when comparing molecules |
@@ -217,6 +218,7 @@ If an xyz holds several structures, only the first is computed. Supported elemen
 
 | Item | Default | Description |
 |---|---|---|
+| `input_mode` | ファイル (file) | ファイル (file): choose an xyz or gjf. 描く (draw): draw the structure in an editor (JSME); hydrogens are added and RDKit makes the 3D structure (10 ETKDG conformers optimized with MMFF94, lowest one kept). The structure is not optimized further |
 | `orbitals` | HOMO, LUMO | Orbitals to show, separated by commas. `HOMO-1`, `LUMO+2` and orbital numbers (from 1, lowest energy first) also work. Up to 8 at a time |
 | `isovalue` | 0.02 | Isosurface value ± (Bohr^-3/2). Same as the GaussView default |
 | `grid_quality` | 標準 (standard) | Grid spacing. 粗い (coarse) 0.5 / 標準 (standard) 0.35 / 細かい (fine) 0.25 Bohr. Made coarser automatically for large molecules |
@@ -258,7 +260,7 @@ Notebook cells only take the form values and call functions. The calculations li
 | Module | Contents |
 |---|---|
 | `env.py` | GPU and token checks, install, Hugging Face login, model load (once per session) |
-| `structure.py` | Upload, reading xyz and gjf, charge and multiplicity checks, 3D view |
+| `structure.py`, `draw.html` | Upload, drawing input (JSME → 3D with RDKit), reading xyz and gjf, charge and multiplicity checks, 3D view |
 | `opt.py` | Optimization and progress bars, vibrational analysis (numerical Hessian), results of the Opt notebook |
 | `scan.py` | Relaxed scan |
 | `ts.py` | DMF, Sella, TS checks, simple IRC check |
@@ -330,6 +332,8 @@ This repository does not include the software below. When a notebook runs, it is
 | [cuTENSOR](https://developer.nvidia.com/cutensor) (`cutensor-cu12`) | Opt, TS, Workflow (DFT), ColabDFT | NVIDIA proprietary license |
 | [PySCF](https://github.com/pyscf/pyscf) | Opt, TS, Workflow (DFT), ColabDFT | Apache-2.0 |
 | [pyscf-dispersion](https://github.com/pyscf/dispersion) | Opt, TS, Workflow (DFT), ColabDFT | Apache-2.0 |
+| [RDKit](https://github.com/rdkit/rdkit) | ColabDFT ESP and MO (only with the 描く (draw) input) | BSD-3-Clause |
+| [JSME](https://jsme-editor.github.io/) (structure editor; not installed, the browser loads it from jsDelivr when shown) | ColabDFT ESP and MO (only with the 描く (draw) input) | BSD-3-Clause |
 
 These licenses are as stated by each package's distribution (PyPI and Ubuntu packages) as of November 2026. Libraries they depend on (PyTorch, NumPy, SciPy, etc.) are installed as well. Check each distribution for the exact terms.
 
