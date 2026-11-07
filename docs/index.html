@@ -48,8 +48,24 @@ body {
 a { color: var(--accent); }
 code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .88em; overflow-wrap: anywhere; }
 header { padding: 20px 0 36px; }
-.lang { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 28px; font-size: .9rem; }
+.topbar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 28px; }
+.lang { display: flex; gap: 6px; font-size: .9rem; }
 .lang a, .lang span { padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
+.lang span { background: var(--tag); color: var(--tag-ink); font-weight: 600; }
+.menu { position: relative; }
+.menu summary { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; list-style: none; }
+.menu summary::-webkit-details-marker { display: none; }
+.menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.menu[open] summary { background: var(--tag); color: var(--tag-ink); }
+.menu nav { position: absolute; right: 0; top: 44px; z-index: 10; min-width: 240px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .12); }
+.menu nav a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; color: var(--ink); text-decoration: none; font-size: .94rem; }
+.menu nav a:hover, .menu nav a:focus-visible { background: var(--tag); outline: none; }
+.menu nav svg { flex: none; width: 18px; height: 18px; color: var(--muted); }
+.menu nav hr { margin: 6px 4px; border: 0; border-top: 1px solid var(--line); }
+.cite p { margin: 0 0 10px; }
+.cite pre { position: relative; margin: 0; padding: 14px 16px; overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font-size: .86rem; line-height: 1.55; }
+.cite .copy { display: block; margin: 0 0 8px auto; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; font-size: .82rem; cursor: pointer; }
+.cite .copy:hover { background: var(--tag); }
 .lang span { background: var(--tag); color: var(--tag-ink); font-weight: 600; }
 header h1 { margin: 0 0 8px; font-size: clamp(2rem, 6vw, 2.75rem); line-height: 1.2; letter-spacing: -.01em; }
 header p { margin: 0; max-width: 42em; color: var(--muted); font-size: 1.06rem; }
@@ -106,7 +122,21 @@ footer p { margin: 0 0 6px; }
 <body>
 <div class="wrap">
   <header>
-    <nav class="lang" aria-label="言語"><span aria-current="page">日本語</span><a href="en/" hreflang="en" lang="en">English</a></nav>
+    <div class="topbar">
+      <nav class="lang" aria-label="言語"><span aria-current="page">日本語</span><a href="https://rchibachiba.github.io/ColabChem/en/" hreflang="en" lang="en">English</a></nav>
+      <details class="menu">
+        <summary aria-label="メニュー"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+        <nav aria-label="リンク">
+          <a href="https://github.com/RChibaChiba/ColabChem"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub リポジトリ</span></a>
+          <a href="https://github.com/RChibaChiba/ColabChem/blob/main/README.ja.md"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>README（詳しい使い方）</span></a>
+          <a href="#cite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h4v4c0 3-1.5 5-4 6M15 7h4v4c0 3-1.5 5-4 6"/></svg><span>引用のしかた</span></a>
+          <a href="https://github.com/RChibaChiba/ColabChem/blob/main/CITATION.cff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>CITATION.cff</span></a>
+          <hr>
+          <a href="https://orcid.org/0009-0002-3492-4159"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#a6ce39"/><path fill="#fff" d="M7.4 6.6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8zM6.7 9.6h1.4v7.8H6.7zM10.2 9.6h3.6c3.4 0 4.9 2.4 4.9 3.9 0 1.6-1.3 3.9-4.9 3.9h-3.6zm1.4 6.6h2.1c2.6 0 3.5-1.6 3.5-2.7 0-1.4-.9-2.7-3.5-2.7h-2.1z"/></svg><span>作者（Ryuhei Chiba）の ORCID</span></a>
+          <a href="https://github.com/RChibaChiba/ColabChem/blob/main/LICENSE"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/></svg><span>ライセンス（MIT）</span></a>
+        </nav>
+      </details>
+    </div>
     <h1>ColabChem</h1>
     <p>Google Colab で開いて「すべて実行」を押し、構造ファイルを選ぶだけ。Meta の機械学習ポテンシャル UMA による構造最適化・スキャン・遷移状態探索と、DFT の一点計算・静電ポテンシャル・分子軌道（HOMO・LUMO）の表示ができます。</p>
   </header>
@@ -239,6 +269,18 @@ footer p { margin: 0 0 6px; }
         <li>扱える元素は、UMA を使うノートでは H〜Bi、ColabDFT では H〜Rn です。周期系には対応していません。</li>
       </ul>
     </section>
+    <section class="cite" aria-labelledby="cite">
+      <h2 id="cite">引用</h2>
+      <p>論文で使う場合は ColabChem を引用してください。あわせて、使った手法（UMA、OMol25、DMF、Sella、PySCF、GPU4PySCF など）の文献も引用してください。一覧は <a href="https://github.com/RChibaChiba/ColabChem/blob/main/README.ja.md#引用">README の引用</a>にあります。</p>
+      <p>Chiba, R. <em>ColabChem</em> [Computer software]. <a href="https://github.com/RChibaChiba/ColabChem">https://github.com/RChibaChiba/ColabChem</a></p>
+      <button class="copy" type="button" data-done="コピーしました" data-fail="コピーできませんでした">BibTeX をコピー</button>
+      <pre id="bibtex">@software{Chiba_ColabChem,
+  author  = {Chiba, Ryuhei},
+  title   = {{ColabChem}},
+  url     = {https://github.com/RChibaChiba/ColabChem},
+  license = {MIT}
+}</pre>
+    </section>
   </main>
 
   <footer>
@@ -246,5 +288,21 @@ footer p { margin: 0 0 6px; }
     <p>ノートと共通コードは <a href="https://github.com/RChibaChiba/ColabChem/blob/main/LICENSE">MIT License</a>。UMA のモデル重みは <a href="https://huggingface.co/facebook/UMA">FAIR Chemistry License v1</a> に従います。</p>
   </footer>
 </div>
+<script>
+// メニューの外をクリックするか Esc で閉じる / close the menu on an outside click or Esc
+(function () {
+  const menu = document.querySelector(".menu");
+  document.addEventListener("click", (e) => { if (menu.open && !menu.contains(e.target)) menu.open = false; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && menu.open) { menu.open = false; menu.querySelector("summary").focus(); } });
+  menu.querySelectorAll("nav a").forEach((a) => a.addEventListener("click", () => { menu.open = false; }));
+  const btn = document.querySelector(".cite .copy");
+  btn.addEventListener("click", async () => {
+    const label = btn.textContent;
+    try { await navigator.clipboard.writeText(document.getElementById("bibtex").textContent); btn.textContent = btn.dataset.done; }
+    catch (e) { btn.textContent = btn.dataset.fail; }
+    setTimeout(() => { btn.textContent = label; }, 1600);
+  });
+})();
+</script>
 </body>
 </html>
