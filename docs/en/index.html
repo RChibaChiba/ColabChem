@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ColabChem</title>
+<meta name="description" content="Google Colab notebooks for geometry optimization, relaxed scans and transition state searches with UMA, and DFT single points with views of the electrostatic potential and molecular orbitals, all from a form.">
+<link rel="alternate" hreflang="ja" href="https://rchibachiba.github.io/ColabChem/">
+<link rel="alternate" hreflang="en" href="https://rchibachiba.github.io/ColabChem/en/">
+<style>
+:root {
+  --bg: #fafaf7;
+  --surface: #ffffff;
+  --ink: #1c2321;
+  --muted: #5b6662;
+  --line: #dfe3dd;
+  --accent: #0b6e5f;
+  --accent-ink: #ffffff;
+  --tag: #e6f0ec;
+  --tag-ink: #0a5a4e;
+  --note: #f3efe3;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141917;
+    --surface: #1c2321;
+    --ink: #e8ece9;
+    --muted: #a0aba6;
+    --line: #333d39;
+    --accent: #5ec9b4;
+    --accent-ink: #0e1a17;
+    --tag: #243530;
+    --tag-ink: #9adfd0;
+    --note: #2a2a22;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+a { color: var(--accent); }
+code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .88em; overflow-wrap: anywhere; }
+header { padding: 20px 0 36px; }
+.lang { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 28px; font-size: .9rem; }
+.lang a, .lang span { padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
+.lang span { background: var(--tag); color: var(--tag-ink); font-weight: 600; }
+header h1 { margin: 0 0 8px; font-size: clamp(2rem, 6vw, 2.75rem); line-height: 1.2; letter-spacing: -.01em; }
+header p { margin: 0; max-width: 42em; color: var(--muted); font-size: 1.06rem; }
+h2 { margin: 48px 0 16px; font-size: 1.3rem; line-height: 1.4; }
+.cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.card h3 { margin: 0 0 4px; font-size: 1.12rem; line-height: 1.4; }
+.card > p { margin: 0 0 14px; }
+.card dl { margin: 0 0 18px; font-size: .88rem; line-height: 1.6; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0 0 8px; }
+.card .open {
+  margin-top: auto;
+  padding: 9px 14px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  font-size: .94rem;
+  text-align: center;
+  text-decoration: none;
+}
+.card .open:hover { opacity: .88; }
+.card .open:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tag {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 1px 9px;
+  border-radius: 4px;
+  background: var(--tag);
+  color: var(--tag-ink);
+  font-size: .78rem;
+  font-weight: 600;
+}
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .86rem; }
+td:last-child { white-space: nowrap; font-weight: 600; }
+ol, ul { margin: 0; padding-left: 1.4em; }
+li { margin-bottom: 6px; }
+.note { margin-top: 16px; padding: 12px 16px; border-radius: 6px; background: var(--note); font-size: .94rem; }
+footer { margin-top: 56px; padding: 24px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+footer p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <nav class="lang" aria-label="Language"><a href="../" hreflang="ja" lang="ja">日本語</a><span aria-current="page">English</span></nav>
+    <h1>ColabChem</h1>
+    <p>Open a notebook in Google Colab, choose "Run all" and pick a structure file. Geometry optimization, relaxed scans and transition state searches with Meta's machine learning potential UMA, plus DFT single points with views of the electrostatic potential and molecular orbitals (HOMO, LUMO).</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="notebooks">
+      <h2 id="notebooks">ColabUMA: notebooks that use UMA</h2>
+      <div class="cards">
+        <article class="card">
+          <h3>ColabUMA Opt</h3>
+          <p>Geometry optimization, with a vibrational analysis and a DFT single point at the optimized structure.</p>
+          <dl>
+            <dt>Input</dt><dd>One xyz or gjf file</dd>
+            <dt>Main output</dt><dd>Optimized structure, path and vibrations that open in GaussView, DFT energy</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Opt.ipynb" aria-label="Open ColabUMA Opt in Colab">Open in Colab</a>
+        </article>
+
+        <article class="card">
+          <h3>ColabUMA Scan</h3>
+          <p>Relaxed scan of a bond length, angle or dihedral. Corresponds to the <code>S</code> entry of Gaussian's <code>opt=modredundant</code>.</p>
+          <dl>
+            <dt>Input</dt><dd>One xyz or gjf file</dd>
+            <dt>Main output</dt><dd>Energy at each point (CSV) and structures, optimized structures before and after the scan</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Scan.ipynb" aria-label="Open ColabUMA Scan in Colab">Open in Colab</a>
+        </article>
+
+        <article class="card">
+          <h3>ColabUMA TS</h3>
+          <p>Transition state search. DMF finds a path, Sella refines the TS, then the imaginary frequency, a simple IRC check and DFT single points.</p>
+          <dl>
+            <dt>Input</dt><dd>Reactant and product with the same atom order, or an initial TS guess</dd>
+            <dt>Main output</dt><dd>TS structure, imaginary frequency, reaction path, gjf for Gaussian, activation energies</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_TS.ipynb" aria-label="Open ColabUMA TS in Colab">Open in Colab</a>
+        </article>
+
+        <article class="card">
+          <h3>ColabUMA Workflow</h3>
+          <p>Optimization → scan → transition state → DFT single point in one session, with a single install and model load.</p>
+          <dl>
+            <dt>Input</dt><dd>One xyz or gjf file</dd>
+            <dt>Main output</dt><dd>One ZIP with the results of every stage</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow.ipynb" aria-label="Open ColabUMA Workflow in Colab">Open in Colab</a>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="notebooks-dft">
+      <h2 id="notebooks-dft">ColabDFT: notebooks without UMA</h2>
+      <div class="cards">
+        <article class="card">
+          <div><span class="tag">No token needed</span></div>
+          <h3>ColabDFT SPE</h3>
+          <p>DFT single point with GPU4PySCF on the input structure as it is.</p>
+          <dl>
+            <dt>Input</dt><dd>One xyz or gjf file</dd>
+            <dt>Main output</dt><dd>xyz with the energy written in, DFT energy (CSV)</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE.ipynb" aria-label="Open ColabDFT SPE in Colab">Open in Colab</a>
+        </article>
+
+        <article class="card">
+          <div><span class="tag">No token needed</span></div>
+          <h3>ColabDFT ESP</h3>
+          <p>DFT single point on the input structure, then the electrostatic potential (ESP) colored on an electron density isosurface in 3D.</p>
+          <dl>
+            <dt>Input</dt><dd>One xyz or gjf file, or a structure drawn in an editor</dd>
+            <dt>Main output</dt><dd>3D view of the ESP, ESP and density cube files, minimum and maximum on the surface</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_ESP.ipynb" aria-label="Open ColabDFT ESP in Colab">Open in Colab</a>
+        </article>
+
+        <article class="card">
+          <div><span class="tag">No token needed</span></div>
+          <h3>ColabDFT MO</h3>
+          <p>DFT single point on the input structure, then molecular orbitals such as HOMO and LUMO as isosurfaces in 3D. Click the energy level diagram to switch to other orbitals.</p>
+          <dl>
+            <dt>Input</dt><dd>One xyz or gjf file, or a structure drawn in an editor</dd>
+            <dt>Main output</dt><dd>Energy level diagram and 3D view of the orbitals, orbital cube files, orbital energies and the HOMO-LUMO gap</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_MO.ipynb" aria-label="Open ColabDFT MO in Colab">Open in Colab</a>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="which">
+      <h2 id="which">Which notebook to use</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th scope="col">What you want to do</th><th scope="col">Notebook</th></tr></thead>
+          <tbody>
+            <tr><td>Optimize a structure</td><td>Opt</td></tr>
+            <tr><td>Follow the energy while moving a bond or dihedral</td><td>Scan</td></tr>
+            <tr><td>Find a TS from a reactant and product, or from a guess</td><td>TS</td></tr>
+            <tr><td>Go from one input structure all the way to a TS</td><td>Workflow</td></tr>
+            <tr><td>Get the DFT energy of your own structure</td><td>ColabDFT SPE</td></tr>
+            <tr><td>See the electrostatic potential of your own structure</td><td>ColabDFT ESP</td></tr>
+            <tr><td>See the HOMO and LUMO of your own structure</td><td>ColabDFT MO</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="usage">
+      <h2 id="usage">How to use</h2>
+      <ol>
+        <li>Open a notebook with "Open in Colab" above</li>
+        <li>In <strong>Runtime → Change runtime type</strong>, choose <strong>T4 GPU</strong></li>
+        <li>Fill in the form: output name, charge, spin multiplicity and so on</li>
+        <li>Choose <strong>Runtime → Run all</strong></li>
+        <li>When the file selection button appears, pick your structure file. You can leave it running after that</li>
+        <li>Check the results and download the ZIP</li>
+      </ol>
+      <p>In ColabDFT ESP and MO, setting the input in the form to 描く (draw) shows a structure editor (JSME) instead of the file selection. Draw the molecule and press 「この構造で計算」 (compute this structure): hydrogens are added and a 3D structure is made before the calculation.</p>
+      <p>The forms and messages in the notebooks are in Japanese. The <a href="https://github.com/RChibaChiba/ColabChem/blob/main/README.md">English README</a> gives the Japanese label next to each item.</p>
+      <div class="note">
+        <strong>First time only (all but ColabDFT):</strong>
+        Request access at <a href="https://huggingface.co/facebook/UMA">facebook/UMA</a> and accept the FAIR Chemistry License v1. Once approved, create a <a href="https://huggingface.co/settings/tokens">token</a> with Read access. In Colab's left sidebar, open 🔑 (Secrets), add it with the name <code>HF_TOKEN</code>, and turn on notebook access.
+      </div>
+    </section>
+
+    <section aria-labelledby="notes">
+      <h2 id="notes">Notes</h2>
+      <ul>
+        <li>UMA is a machine learning potential, not a replacement for DFT. Check final energy comparisons with DFT.</li>
+        <li>An optimization can converge to a saddle point. Check important structures with a vibrational analysis.</li>
+        <li>The TS notebook finds a TS on the UMA potential energy surface. Finish with a TS optimization and IRC at the DFT level.</li>
+        <li>Supported elements are H–Bi in the UMA notebooks and H–Rn in ColabDFT. Periodic systems are not supported.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>Input items, output files and references are in the <a href="https://github.com/RChibaChiba/ColabChem/blob/main/README.md">README on GitHub</a>.</p>
+    <p>The notebooks and shared code are under the <a href="https://github.com/RChibaChiba/ColabChem/blob/main/LICENSE">MIT License</a>. The UMA model weights are under the <a href="https://huggingface.co/facebook/UMA">FAIR Chemistry License v1</a>.</p>
+  </footer>
+</div>
+</body>
+</html>
