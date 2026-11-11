@@ -40,8 +40,8 @@ def header(job, numbers, route, first, program="ColabUMA", method=None):
     ] + [f" {_symbol(z):<2s} {x:20.8f}{y:14.8f}{zz:14.8f}" for z, (x, y, zz) in zip(numbers, first)] + [" "]
 
 
-def orientation(numbers, pos):
-    out = ["                          Input orientation:", DASH69,
+def orientation(numbers, pos, title="Input orientation:"):
+    out = [" " * ((71 - len(title)) // 2) + title, DASH69,
            " Center     Atomic      Atomic             Coordinates (Angstroms)",
            " Number     Number       Type             X           Y           Z", DASH69]
     out += [f"{k + 1:7d}{z:11d}{0:12d}    {x:12.6f}{y:12.6f}{zz:12.6f}" for k, (z, (x, y, zz)) in enumerate(zip(numbers, pos))]
@@ -108,6 +108,11 @@ def opt_log(r, job, numbers, saddle=False, program="ColabUMA", method=None):
     return "\n".join(out) + "\n"
 
 
+def _fixed(v, width, digits):
+    # -0.00 と書かないようにする（Gaussian の出力には出てこない）
+    return f"{round(float(v), digits) + 0.0:{width}.{digits}f}"
+
+
 def freq_section(vib, numbers):
     # Gaussian の freq 出力と同じ書式の振動数と基準振動（3モードずつ）
     out = [" Harmonic frequencies (cm**-1), IR intensities (KM/Mole), Raman scattering",
@@ -115,29 +120,50 @@ def freq_section(vib, numbers):
            " incident light, reduced masses (AMU), force constants (mDyne/A),",
            " and normal coordinates:"]
     freqs = vib["freqs"]
+    row = lambda values: "".join(_fixed(v, 12 if j == 0 else 23, 4) for j, v in enumerate(values))
     for s in range(0, len(freqs), 3):
         idx = list(range(s, min(s + 3, len(freqs))))
         out.append("".join(f"{k + 1:23d}" for k in idx))
         out.append("".join(f"{'A':>23s}" for _ in idx))
-        out.append(" Frequencies --" + "".join(f"{freqs[k]:{12 if j == 0 else 23}.4f}" for j, k in enumerate(idx)))
-        out.append(" Red. masses --" + "".join(f"{vib['red_mass'][k]:{12 if j == 0 else 23}.4f}" for j, k in enumerate(idx)))
-        out.append(" Frc consts  --" + "".join(f"{vib['force_const'][k]:{12 if j == 0 else 23}.4f}" for j, k in enumerate(idx)))
-        out.append(" IR Inten    --" + "".join(f"{0.0:{12 if j == 0 else 23}.4f}" for j, k in enumerate(idx)))
+        out.append(" Frequencies --" + row(freqs[k] for k in idx))
+        out.append(" Red. masses --" + row(vib["red_mass"][k] for k in idx))
+        out.append(" Frc consts  --" + row(abs(vib["force_const"][k]) for k in idx))  # Gaussian は虚振動でも正の値
+        out.append(" IR Inten    --" + row(0.0 for _ in idx))
         out.append("  Atom  AN" + "".join(("" if j == 0 else "  ") + "      X      Y      Z" for j in range(len(idx))))
         for a, z in enumerate(numbers):
             out.append(f"{a + 1:6d}{z:4d}" + "".join(
-                "  " + "".join(f"{c:7.2f}" for c in vib["modes"][k][a]) for k in idx))
+                "  " + "".join(_fixed(c, 7, 2) for c in vib["modes"][k][a]) for k in idx))
     return out
 
 
 def freq_log(atoms, energy, forces, vib, job, program="ColabUMA"):
+    """振動数と基準振動を、Gaussian の freq ジョブの出力と同じ並びで書く（GaussView の Results → Vibrations 用）。
+
+    構造 → SCF Done → Low frequencies → 基準振動 → Thermochemistry の見出し → 力、の順。
+    座標は Input orientation と Standard orientation の両方に同じものを書く（基準振動もこの座標系のもの）。
+    """
     numbers = atoms.numbers
+    n = len(numbers)
     out = header(job, numbers, "freq", atoms.positions, program, method=f"{job.model_name}/{job.task_name}")
-    out += orientation(numbers, atoms.positions) + scf_done(energy)
-    out += forces_block(numbers, forces)[0]
-    low = vib["freqs"][:6]
-    out += [" ", " Low frequencies --- " + "".join(f"{v:9.4f}" for v in low), " "]
-    out += freq_section(vib, numbers) + [" "] + end(True)
+    out += [f" NAtoms= {n:6d} NQM=   {n:6d} NQMF=       0 NMMI=      0 NMMIF=      0"]
+    out += orientation(numbers, atoms.positions)
+    out += orientation(numbers, atoms.positions, "Standard orientation:")
+    out += scf_done(energy)
+    low = list(vib["all"])  # 並進・回転を射影する前の全モード（小さい順）
+    out += [" Full mass-weighted force constant matrix:",
+            " Low frequencies ---" + "".join(_fixed(v, 10, 4) for v in low[:6])]
+    if len(low) > 6:
+        out += [" Low frequencies ---" + "".join(_fixed(v, 10, 4) for v in low[6:9])]
+    n_neg = int((np.asarray(vib["freqs"]) < 0).sum())
+    if n_neg:
+        out += [f" ******{n_neg:5d} imaginary frequencies (negative Signs) ****** "]
+    out += [" Diagonal vibrational polarizability:", "".join(f"{0.0:16.7f}" for _ in range(3))]
+    out += freq_section(vib, numbers)
+    out += ["", " -------------------", " - Thermochemistry -", " -------------------",
+            " Temperature   298.150 Kelvin.  Pressure   1.00000 Atm."]
+    out += [f" Atom {k + 1:5d} has atomic number {z:2d} and mass {m:9.5f}" for k, (z, m) in enumerate(zip(numbers, atoms.get_masses()))]
+    out += [" ***** Axes restored to original set *****"] + forces_block(numbers, forces)[0]
+    out += [" "] + end(True)
     return "\n".join(out) + "\n"
 
 

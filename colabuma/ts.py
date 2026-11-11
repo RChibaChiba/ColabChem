@@ -224,9 +224,11 @@ def connect(ts_atoms, vib, calc, job, reactant=None, product=None, shift=0.15):
         if sum(s[0] for s in swapped) < sum(s[0] for s in straight) or (
                 sum(s[0] for s in swapped) == sum(s[0] for s in straight)
                 and sum(s[1] for s in swapped) < sum(s[1] for s in straight)):
-            out["minus"], out["plus"] = out["plus"], out["minus"]
-            straight = swapped
-        out["to_reactant"], out["to_product"] = out["minus"], out["plus"]
+            # minus / plus はずらした向きのまま残す（irc_minus.xyz / irc_plus.xyz の名前と中身を合わせる）
+            out["to_reactant"], out["to_product"] = out["plus"], out["minus"]
+            straight = (swapped[1], swapped[0])  # (反応物側, 生成物側) の順にそろえる
+        else:
+            out["to_reactant"], out["to_product"] = out["minus"], out["plus"]
         out["match"] = (straight[0][0] == 0, straight[1][0] == 0)
         out["rmsd"] = (straight[0][1], straight[1][1])
         if all(out["match"]):
