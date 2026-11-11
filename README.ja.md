@@ -8,6 +8,7 @@
 |---|---|---|
 | ColabUMA Opt | 構造最適化 → DFT一点計算 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Opt.ipynb) |
 | ColabUMA Scan | 緩和スキャン（結合長・角度・二面角） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Scan.ipynb) |
+| ColabUMA Conf | 配座探索（高温MD → 最適化 → 低エネルギーの数構造）。金属錯体と基質の会合体など | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Conf.ipynb) |
 | ColabUMA TS | 遷移状態探索（DMF → Sella → DFT一点計算） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_TS.ipynb) |
 | ColabUMA Workflow | 最適化 → スキャン → 遷移状態を1つのセッションで続けて実行 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow.ipynb) |
 | ColabDFT SPE | DFT一点計算のみ（UMAもトークンも不要） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE.ipynb) |
@@ -29,6 +30,7 @@ Google Colabで開いて「すべて実行」するだけで、Metaの機械学�
 - 3D表示、エネルギー（eV・Hartree）、収束グラフの表示と、結果一式のZIPダウンロード
 
 - 結合長・角度・二面角の緩和スキャンと、スキャン前後の最適化（[ColabUMA Scan](#colabuma-scan)）
+- 金属錯体と基質の会合体などの配座探索（高温 MD → 最適化 → 重複を除いて低エネルギーの数構造）（[ColabUMA Conf](#colabuma-conf)）
 - 反応物と生成物からの遷移状態探索（DMF → Sella）、虚振動の確認、簡易IRC、DFT の一点計算（[ColabUMA TS](#colabuma-ts)）
 - 最適化 → スキャン → 遷移状態を、インストールとモデル読み込み1回で続けて実行（[ColabUMA Workflow](#colabuma-workflow)）
 - 手元の構造をそのまま DFT で一点計算（[ColabDFT SPE](#colabdft-spe)）
@@ -121,6 +123,48 @@ Gaussianの入力ファイル（拡張子 .gjf / .com / .gjc）からは**構造
 | `<出力名>_preopt.xyz` / `.log` | 前の最適化の結果と経路（オンのとき） |
 | `<出力名>_postopt.xyz` / `.log` | 後の最適化の結果と経路（オンのとき） |
 | `<出力名>_log.txt` | 入力条件、ソフトのバージョン、各点と各ステップのエネルギーと fmax |
+
+## ColabUMA Conf
+
+[ColabUMA_Conf.ipynb](ColabUMA_Conf.ipynb) は、配座探索のノートです。金属錯体に基質を置いた構造を1つ入れると、エネルギーの低い順に数個（既定は5個）の配座を出します。事前準備と使い方の流れは ColabUMA Opt と同じです。追加でインストールするソフトはありません。
+
+1. 入力構造を最適化し、結合のつながり（どの原子どうしが結合しているか）を読み取る
+2. 高温の Langevin MD を何本か走らせ、等間隔にスナップショットを取る
+3. スナップショットを粗く最適化し（fmax 0.1 eV/Å、最大60ステップ）、エネルギーの低いものだけを最後まで最適化する
+4. 結合のつながりが変わった構造と、同じ配座の重複を除き、エネルギーの低い順に並べる
+
+基質が金属に配位しているか、非共有結合で付いているだけかは指定しません。最適化した入力構造で結合している原子の組（共有結合半径の和の1.25倍より近い組。金属と配位原子の組も含む）をそのまま保ちます。入力で配位していれば配位を保ったまま配座だけが変わり、付いているだけなら基質の位置と向きも変わります。MD のあいだは、結合が伸びすぎたときだけ引き戻す拘束と、分子全体を囲む球の壁を掛けます（ふつうの揺れの範囲では力は0）。最適化には拘束を掛けません。
+
+| 項目 | 既定値 | 説明 |
+|---|---|---|
+| `n_conformers` | 5 | 出力する配座の数 |
+| `md_temperature` | 600 | MD の温度（K） |
+| `md_time_ps` | 20 | MD の時間（ps、全部の MD の合計）。刻みは 2 fs で、MD のあいだだけ水素の質量を 4 にする |
+| `n_replicas` | 4 | MD の本数。初速を変えて同じ構造から始める |
+| `n_snapshots` | 100 | MD から等間隔に取り出す構造の数 |
+| `n_refine` | 20 | 粗い最適化のあと、最後まで最適化する候補の数（最安定から 15 kcal/mol 以内のもの） |
+| `keep_coordination` | オン | 入力構造の金属まわりの結合を保つ。オフにすると金属が関わる組を見張らず、配位子や基質が金属に付いたり離れたりした構造も残る |
+| `random_seed` | 0 | MD の初速と乱数の種 |
+| 収束判定 | normal (0.02) | 最後の最適化の fmax。選択肢は ColabUMA Opt と同じ |
+| `run_dft` | オフ | 出力する配座の DFT 一点計算。項目は ColabUMA Opt と同じ |
+
+捨てる構造と重複の判定：
+
+- 結合が切れた（判定距離の1.15倍より遠い）、新しい結合ができた（判定距離の0.9倍より近い）、金属以外の4配位の中心が反転した構造は捨てる
+- 水素以外の原子で重ね合わせた RMSD が 0.25 Å 未満で、どの原子のずれも 0.7 Å 未満なら同じ配座
+- エネルギーの差が 0.1 kcal/mol 未満で、3つの慣性モーメントがどれも 1% 以内なら同じ配座（メチル基の回転のように、原子を入れ替えると重なるもの。鏡像の配座もここで1つになる）
+
+| ファイル | 内容 |
+|---|---|
+| `<出力名>_conformers.xyz` | 出力する配座（エネルギーの低い順、複数構造xyz）。1番目に重ね合わせてある |
+| `<出力名>_conf1.xyz` … | 各配座を1つずつ |
+| `<出力名>_conformers.csv` | ΔE（kcal/mol）、298 K での存在比、エネルギー、1番目との RMSD、収束 |
+| `<出力名>_ensemble.xyz` | 最後まで最適化して残った配座すべて |
+| `<出力名>_input_opt.xyz` | 入力構造を最適化したもの |
+| `<出力名>_dft.csv` | DFT 一点計算のエネルギー（オンのとき） |
+| `<出力名>_log.txt` | 入力条件、ソフトのバージョン、探索の経過、各配座のエネルギー |
+
+高温 MD による探索は、すべての配座を見つける保証がありません。`md_time_ps` を長くしたり `random_seed` を変えたりして、同じ最安定構造が出るか確かめてください。得られるのは入力構造と同じ結合のつながりを持つ配座なので、配位の仕方が違う異性体は、それぞれを入力にして別々に探索してください。存在比は、出力した配座の中での ΔE（電子エネルギー）だけから求めた目安です。
 
 ## ColabUMA TS
 
@@ -261,6 +305,7 @@ Colab のタイムアウトについて：
 | `structure.py`、`draw.html` | アップロード、構造を描く入力（JSME → RDKit で 3D 化）、xyz・gjf の読み込み、電荷・多重度の確認、3D表示 |
 | `opt.py` | 最適化とプログレスバー、振動解析（数値ヘシアン）、Opt ノートの結果表示 |
 | `scan.py` | 緩和スキャン |
+| `conf.py` | 配座探索（結合のつながりの判定、高温 MD、重複の判定） |
 | `ts.py` | DMF、Sella、TS の確認、簡易IRC |
 | `dft.py` | DFT の一点計算（gpu4pyscf、使えなければ CPU の PySCF）、メモリの見積もり、時間の上限 |
 | `esp.py` | 格子上の電子密度と ESP、cube の書き出し、等密度面の表示 |

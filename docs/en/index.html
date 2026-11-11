@@ -166,6 +166,16 @@ footer p { margin: 0 0 6px; }
         </article>
 
         <article class="card">
+          <h3>ColabUMA Conf</h3>
+          <p>Conformer search. Optimizes structures collected by high-temperature MD, removes duplicates and reports the few lowest in energy. Works for a metal complex with a substrate.</p>
+          <dl>
+            <dt>Input</dt><dd>One xyz or gjf file (the complex with the substrate placed on it)</dd>
+            <dt>Main output</dt><dd>The lowest conformers (5 by default) with ΔE, DFT energies</dd>
+          </dl>
+          <a class="open" href="https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Conf_en.ipynb" aria-label="Open ColabUMA Conf in Colab">Open in Colab</a>
+        </article>
+
+        <article class="card">
           <h3>ColabUMA TS</h3>
           <p>Transition state search. DMF finds a path, Sella refines the TS, then the imaginary frequency, a simple IRC check and DFT single points.</p>
           <dl>

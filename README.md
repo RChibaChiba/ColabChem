@@ -8,6 +8,7 @@
 |---|---|---|
 | ColabUMA Opt | Geometry optimization → DFT single point | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Opt_en.ipynb) |
 | ColabUMA Scan | Relaxed scan (bond length, angle, dihedral) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Scan_en.ipynb) |
+| ColabUMA Conf | Conformer search (high-temperature MD → optimization → the few lowest structures), for example a metal complex with a substrate | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Conf_en.ipynb) |
 | ColabUMA TS | Transition state search (DMF → Sella → DFT single point) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_TS_en.ipynb) |
 | ColabUMA Workflow | Optimization → scan → transition state in one session | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabUMA_Workflow_en.ipynb) |
 | ColabDFT SPE | DFT single point only (no UMA, no token needed) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RChibaChiba/ColabChem/blob/main/ColabDFT_SPE_en.ipynb) |
@@ -29,6 +30,7 @@ Each notebook comes in two versions with the same code: the English one (`<name>
 - 3D view, energies (eV and Hartree), a convergence plot, and a ZIP of all results to download
 
 - Relaxed scans of a bond length, angle or dihedral, with optimizations before and after the scan ([ColabUMA Scan](#colabuma-scan))
+- Conformer search, for example of a metal complex with a substrate (high-temperature MD → optimization → the few lowest structures after removing duplicates) ([ColabUMA Conf](#colabuma-conf))
 - Transition state search from a reactant and a product (DMF → Sella), imaginary frequency check, a simple IRC check, and DFT single points ([ColabUMA TS](#colabuma-ts))
 - Optimization → scan → transition state in a row, with a single install and model load ([ColabUMA Workflow](#colabuma-workflow))
 - DFT single point of your own structure as it is ([ColabDFT SPE](#colabdft-spe))
@@ -121,6 +123,48 @@ If you don't know the atom numbers, run once: "5. Prepare the structures" shows 
 | `<output name>_preopt.xyz` / `.log` | Result and path of the optimization before the scan (when on) |
 | `<output name>_postopt.xyz` / `.log` | Result and path of the optimization after the scan (when on) |
 | `<output name>_log.txt` | Input settings, software versions, energy and fmax of each point and step |
+
+## ColabUMA Conf
+
+[ColabUMA_Conf_en.ipynb](ColabUMA_Conf_en.ipynb) searches for conformers. Give it one structure of a metal complex with the substrate placed on it, and it reports the few conformers lowest in energy (5 by default). Setup and usage are the same as for ColabUMA Opt. It installs no extra software.
+
+1. Optimize the input structure and read its bonding (which atoms are bonded to which)
+2. Run several high-temperature Langevin MD runs and take snapshots at even intervals
+3. Optimize the snapshots quickly (fmax 0.1 eV/Å, at most 60 steps), then optimize only the lowest ones fully
+4. Drop structures whose bonding changed and duplicates of the same conformer, and sort by energy
+
+There is no setting for whether the substrate is coordinated to the metal or only held by non-covalent interactions. The pairs of atoms bonded in the optimized input structure (closer than 1.25 times the sum of the covalent radii; metal–donor pairs included) are kept as they are. If the substrate is coordinated in the input, the coordination is kept and only the conformation changes; if it is only attached, its position and orientation change too. During the MD, a restraint pulls a bond back only when it stretches too far, and a spherical wall surrounds the whole system (both give zero force within normal thermal motion). The optimizations have no restraints.
+
+| Item | Default | Description |
+|---|---|---|
+| `n_conformers` | 5 | Number of conformers to report |
+| `md_temperature` | 600 | MD temperature (K) |
+| `md_time_ps` | 20 | MD time (ps, all MD runs together). The time step is 2 fs, and hydrogen has a mass of 4 during the MD only |
+| `n_replicas` | 4 | Number of MD runs, started from the same structure with different velocities |
+| `n_snapshots` | 100 | Number of structures taken from the MD at even intervals |
+| `n_refine` | 20 | Number of candidates optimized fully after the quick optimization (those within 15 kcal/mol of the lowest) |
+| `keep_coordination` | on | Keep the bonds around the metal as in the input structure. When off, pairs that involve a metal are not watched, so structures where a ligand or the substrate has bound to or left the metal are kept as well |
+| `random_seed` | 0 | Seed for the MD velocities and random forces |
+| Convergence | normal (0.02) | fmax of the full optimization. Same choices as ColabUMA Opt |
+| `run_dft` | off | DFT single points of the reported conformers. Same items as ColabUMA Opt |
+
+What is discarded, and what counts as a duplicate:
+
+- A structure is discarded if a bond broke (longer than 1.15 times the bonding distance), a new bond formed (shorter than 0.9 times the bonding distance), or a four-coordinate non-metal centre inverted
+- Two structures are the same conformer if the RMSD over non-hydrogen atoms after superposition is below 0.25 Å and no atom deviates by 0.7 Å or more
+- They are also the same conformer if the energies differ by less than 0.1 kcal/mol and all three moments of inertia agree within 1% (structures that coincide after exchanging atoms, such as a rotated methyl group; mirror-image conformers also become one here)
+
+| File | Contents |
+|---|---|
+| `<name>_conformers.xyz` | The reported conformers (lowest energy first, multi-structure xyz), superimposed on the first |
+| `<name>_conf1.xyz` … | Each conformer on its own |
+| `<name>_conformers.csv` | ΔE (kcal/mol), population at 298 K, energies, RMSD to the first, convergence |
+| `<name>_ensemble.xyz` | Every conformer left after the full optimization |
+| `<name>_input_opt.xyz` | The optimized input structure |
+| `<name>_dft.csv` | DFT single point energies (when on) |
+| `<name>_log.txt` | Input settings, software versions, the course of the search, the energy of each conformer |
+
+A search by high-temperature MD is not guaranteed to find every conformer. Make `md_time_ps` longer or change `random_seed` and check that the same lowest structure comes out. The results are conformers with the same bonding as the input structure, so for isomers that coordinate differently, run a search from each. The populations are a rough guide from ΔE (electronic energy) among the reported conformers only.
 
 ## ColabUMA TS
 
@@ -261,6 +305,7 @@ Notebook cells only take the form values and call functions. The calculations li
 | `structure.py`, `draw.html` | Upload, drawing input (JSME → 3D with RDKit), reading xyz and gjf, charge and multiplicity checks, 3D view |
 | `opt.py` | Optimization and progress bars, vibrational analysis (numerical Hessian), results of the Opt notebook |
 | `scan.py` | Relaxed scan |
+| `conf.py` | Conformer search (bonding check, high-temperature MD, duplicate check) |
 | `ts.py` | DMF, Sella, TS checks, simple IRC check |
 | `dft.py` | DFT single points (gpu4pyscf, or CPU PySCF if the GPU is unavailable), memory estimate, time limit |
 | `esp.py` | Electron density and ESP on a grid, cube output, isosurface view |
